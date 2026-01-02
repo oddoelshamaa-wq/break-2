@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Break 2 System | V7.0</title>
-    <!-- استبدال الخط بخط Cairo لأكثر وضوحاً -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Break 2 System | 3D V7.0</title>
+    <!-- خط Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <!-- أيقونات FontAwesome للتجميل -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
-            /* ألوان مودرن واضحة */
-            --primary: #4f46e5;       /* أزرق نيلي */
-            --primary-dark: #4338ca;
-            --secondary: #64748b;
-            --bg-body: #f1f5f9;
-            --surface: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --primary: #6366f1;
+            --accent: #a855f7;
+            --text-light: #ffffff;
+            --text-dim: #cbd5e1;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
         * { box-sizing: border-box; outline: none; }
@@ -26,18 +28,61 @@
         body {
             font-family: 'Cairo', sans-serif;
             margin: 0;
-            background-color: var(--bg-body);
-            color: #1e293b;
-            line-height: 1.6;
+            background: #0f172a;
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            /* خلفية متحركة 3D */
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
         }
 
-        /* خلفية متحركة هادية */
-        .bg-pattern {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: radial-gradient(circle at 50% 120%, #e0e7ff, var(--bg-body));
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        /* تأثير عائم خلفي */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: floatOrb 10s infinite alternate;
+        }
+        .orb-1 { top: 10%; left: 10%; width: 300px; height: 300px; background: var(--primary); opacity: 0.4; }
+        .orb-2 { bottom: 10%; right: 10%; width: 250px; height: 250px; background: var(--accent); opacity: 0.4; animation-delay: -5s; }
+
+        @keyframes floatOrb { from { transform: translate(0, 0); } to { transform: translate(30px, 50px); } }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+
+        /* --- تصميم الزجاج 3D --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid rgba(255,255,255,0.4);
+            border-left: 1px solid rgba(255,255,255,0.4);
+            box-shadow: var(--glass-shadow);
+            border-radius: 24px;
+            padding: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* حركة الـ 3D عند التحويم */
+        .tilt-effect {
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        .tilt-effect:hover {
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            border-color: rgba(255,255,255,0.5);
+        }
 
         /* --- شاشة الدخول --- */
         #login-page {
@@ -47,171 +92,180 @@
             justify-content: center;
         }
         .login-card {
-            background: var(--surface);
-            padding: 40px;
             width: 100%;
-            max-width: 400px;
-            border-radius: 24px;
-            box-shadow: var(--shadow-lg);
+            max-width: 420px;
             text-align: center;
-            border: 1px solid #e2e8f0;
-        }
-        .login-icon { font-size: 60px; margin-bottom: 10px; display: inline-block; animation: float 3s ease-in-out infinite; }
-        
-        /* --- التصميم الداخلي --- */
-        .nav-bar {
-            background: var(--surface);
-            padding: 15px 25px;
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            border: 1px solid #e2e8f0;
-        }
-        .user-info { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--primary); }
-        .role-badge { background: #e0e7ff; color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
-
-        .nav-actions { display: flex; gap: 10px; }
-        .nav-btn {
-            background: transparent; border: none; padding: 8px 16px;
-            font-family: 'Cairo'; font-weight: 600; color: var(--secondary);
-            cursor: pointer; border-radius: 10px; transition: 0.3s;
-        }
-        .nav-btn:hover { background: #f8fafc; color: var(--primary); }
-        .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
-
-        /* Grid Layout */
-        .main-grid { display: grid; grid-template-columns: 350px 1fr; gap: 25px; }
-        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
-
-        /* Cards & Inputs */
-        .card {
-            background: var(--surface);
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: var(--shadow);
-            border: 1px solid #e2e8f0;
-            margin-bottom: 20px;
-        }
-        h3 { margin-top: 0; color: #0f172a; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
-        
-        label { display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 600; color: #475569; }
-        input, select, textarea {
-            width: 100%; padding: 12px 15px; border: 2px solid #e2e8f0;
-            border-radius: 12px; font-family: 'Cairo'; font-size: 1rem; transition: 0.3s;
-            background: #f8fafc;
-        }
-        input:focus, select:focus, textarea:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-        textarea { resize: vertical; min-height: 100px; }
-
-        .btn-main {
-            width: 100%; background: var(--primary); color: white;
-            padding: 14px; border: none; border-radius: 12px;
-            font-size: 1rem; font-weight: 700; cursor: pointer;
-            margin-top: 10px; transition: 0.3s; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
-        }
-        .btn-main:hover { background: var(--primary-dark); transform: translateY(-2px); }
-        .btn-danger { background: #fee2e2; color: var(--danger); }
-        .btn-danger:hover { background: var(--danger); color: white; }
-
-        /* Complaint Cards (Feed) */
-        .feed-card {
-            background: var(--surface);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 15px;
-            border: 1px solid #e2e8f0;
-            border-right: 5px solid var(--warning);
-            transition: transform 0.2s;
             position: relative;
-            box-shadow: var(--shadow);
+            overflow: hidden;
         }
-        .feed-card:hover { transform: translateY(-3px); }
-        .feed-card.done { border-right-color: var(--success); opacity: 0.9; }
-        .feed-card.price { border-right-color: var(--primary); background: #f5f3ff; }
+        .login-card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine { 0% { left: -100%; top: -100%; } 100% { left: 100%; top: 100%; } }
 
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .branch-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 5px; }
-        .meta-tag { background: #f1f5f9; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #64748b; }
+        h2 { margin: 0; font-weight: 900; letter-spacing: 1px; background: linear-gradient(to right, #fff, #a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .card-body { background: #f8fafc; padding: 12px; border-radius: 10px; margin: 10px 0; color: #334155; font-weight: 600; }
-        
-        /* Reply Section */
-        .action-area { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e1; }
-        .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
-        .btn-s { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-family: 'Cairo'; font-size: 0.9rem; color: white; transition: 0.2s; }
-        .btn-ok { background: var(--success); }
-        .btn-ok:hover { filter: brightness(0.9); }
-        .btn-info { background: #3b82f6; }
-        .btn-send-note { background: #64748b; flex: none; width: auto; padding: 0 20px; }
+        /* Inputs & Buttons */
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-dim); text-align: right; }
+        input, select, textarea {
+            width: 100%; padding: 14px 20px; 
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: white; font-family: 'Cairo'; font-size: 1rem;
+            transition: 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
 
-        /* Tables */
-        .table-container { overflow-x: auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; }
+        .btn-3d {
+            width: 100%; background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none; padding: 15px; border-radius: 12px;
+            color: white; font-weight: bold; font-size: 1.1rem; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            transition: 0.3s; position: relative; top: 0;
+            overflow: hidden;
+        }
+        .btn-3d:hover { box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6); transform: translateY(-2px); }
+        .btn-3d:active { top: 2px; box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4); }
+
+        /* --- Navbar --- */
+        .nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 30px; margin-bottom: 30px;
+            background: rgba(30, 41, 59, 0.7);
+        }
+        .role-badge { background: linear-gradient(90deg, #f59e0b, #d97706); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3); }
+
+        .nav-btn {
+            background: transparent; border: none; padding: 10px 20px;
+            color: var(--text-dim); font-family: 'Cairo'; font-weight: 700; cursor: pointer;
+            border-radius: 12px; transition: 0.3s;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+        .btn-danger-glow { color: #fca5a5; }
+        .btn-danger-glow:hover { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        /* --- Layout --- */
+        .main-grid { display: grid; grid-template-columns: 380px 1fr; gap: 30px; }
+        @media (max-width: 950px) { .main-grid { grid-template-columns: 1fr; } }
+
+        h3 { display: flex; align-items: center; gap: 10px; color: var(--text-light); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-top: 0; }
+
+        /* --- Feed Cards (3D Items) --- */
+        .feed-card {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 16px; padding: 20px; margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative; overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .feed-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--warning); box-shadow: 0 0 10px var(--warning); }
+        .feed-card.done::before { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .feed-card.price::before { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+        
+        /* 3D Hover Logic (JS will enhance this) */
+        .feed-card:hover { transform: translateY(-5px) scale(1.02); background: rgba(30, 41, 59, 0.8); z-index: 10; border-color: rgba(255,255,255,0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .branch-title { font-size: 1.2rem; font-weight: 700; color: white; }
+        .meta-tag { background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; color: #94a3b8; }
+        
+        .msg-bubble { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border-right: 3px solid rgba(255,255,255,0.2); font-size: 1rem; line-height: 1.6; }
+
+        /* Buttons Small */
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-s { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-family: 'Cairo'; color: white; transition: 0.2s; position: relative; overflow: hidden; }
+        .btn-ok { background: linear-gradient(45deg, #059669, #10b981); }
+        .btn-info { background: linear-gradient(45deg, #2563eb, #3b82f6); }
+        
+        /* Table Styles */
+        .table-wrapper { overflow-x: auto; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th { background: #f8fafc; padding: 15px; text-align: right; color: #475569; font-weight: 700; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: #334155; font-weight: 600; }
-        tr:hover { background: #f8fafc; }
-        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
-        .status-badge.done { background: #d1fae5; color: #065f46; }
+        th { background: rgba(0,0,0,0.3); padding: 15px; text-align: right; color: #94a3b8; }
+        td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
 
         .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* تخصيص Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
     </style>
 </head>
 <body>
 
+    <!-- خلفية مضيئة -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    
     <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-    <div class="bg-pattern"></div>
 
     <div class="container">
         
         <!-- صفحة تسجيل الدخول -->
         <div id="login-page">
-            <div class="login-card fade-in">
-                <div class="login-icon">🛡️</div>
-                <h2 style="color:var(--primary); margin-bottom:5px;">Break 2 System</h2>
-                <p style="color:#64748b; margin-bottom:30px;">نظام إدارة الفروع والشكاوى V7.0</p>
+            <div class="glass-panel login-card tilt-effect">
+                <div style="font-size: 50px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(99,102,241,0.5);">🛡️</div>
+                <h2 style="margin-bottom: 5px;">BREAK 2 SYSTEM</h2>
+                <p style="color:var(--text-dim); margin-bottom:30px; letter-spacing: 2px; font-size: 0.8rem;">SECURE V7.0 ACCESS</p>
                 
                 <div style="text-align: right;">
-                    <label>اسم المستخدم</label>
-                    <input type="text" id="username" placeholder="مثال: admin">
+                    <label><i class="fas fa-user"></i> اسم المستخدم</label>
+                    <input type="text" id="username" placeholder="Username">
                     
-                    <label style="margin-top:15px;">كلمة المرور</label>
+                    <label style="margin-top:15px;"><i class="fas fa-lock"></i> كلمة المرور</label>
                     <input type="password" id="password" placeholder="••••••">
                 </div>
 
-                <button class="btn-main" onclick="login()">تسجيل الدخول</button>
+                <button class="btn-3d" style="margin-top: 25px;" onclick="login()">
+                    تسجيل الدخول <i class="fas fa-arrow-left" style="margin-right:8px;"></i>
+                </button>
             </div>
         </div>
 
         <!-- محتوى النظام -->
         <div id="system-content" class="hidden fade-in">
             <!-- الشريط العلوي -->
-            <nav class="nav-bar">
-                <div class="user-info">
-                    <span class="role-badge" id="roleLabel">--</span>
-                    <span id="userInfo" style="font-size:1.1rem;">--</span>
+            <nav class="glass-panel nav-bar">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 0 15px var(--primary);">
+                        <i class="fas fa-user-astronaut"></i>
+                    </div>
+                    <div>
+                        <div id="userInfo" style="font-weight: 700; font-size: 1.1rem;">--</div>
+                        <span class="role-badge" id="roleLabel">--</span>
+                    </div>
                 </div>
-                <div class="nav-actions">
-                    <button id="btnMain" class="nav-btn active" onclick="showPage('main')">📋 الرئيسية</button>
-                    <button id="btnArchive" class="nav-btn" onclick="showPage('archive')">📂 السجل</button>
-                    <button class="nav-btn btn-danger" onclick="logout()">🚪 خروج</button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnMain" class="nav-btn active" onclick="showPage('main')"><i class="fas fa-bolt"></i> القيادة</button>
+                    <button id="btnArchive" class="nav-btn" onclick="showPage('archive')"><i class="fas fa-database"></i> الأرشيف</button>
+                    <button class="nav-btn btn-danger-glow" onclick="logout()"><i class="fas fa-power-off"></i></button>
                 </div>
             </nav>
 
             <!-- الصفحة الرئيسية -->
             <div id="page-main">
                 <div class="main-grid">
-                    <!-- القائمة الجانبية (أكشن) -->
-                    <aside id="sideAction"></aside>
+                    <!-- القائمة الجانبية -->
+                    <aside id="sideAction" class="fade-in"></aside>
 
-                    <!-- قائمة البلاغات -->
+                    <!-- Feed -->
                     <main>
-                        <h3 style="margin-bottom:15px;">📡 الحالة اللحظية (Live Feed)</h3>
+                        <h3><i class="fas fa-satellite-dish" style="color:var(--success);"></i> البث المباشر للعمليات</h3>
                         <div id="priceSection"></div>
                         <div id="activeList"></div>
                     </main>
@@ -220,13 +274,13 @@
 
             <!-- صفحة الأرشيف -->
             <div id="page-archive" class="hidden">
-                <div class="card">
-                    <h3>🔍 فلتر البحث</h3>
+                <div class="glass-panel" style="margin-bottom: 20px;">
+                    <h3><i class="fas fa-search"></i> تصفية البيانات</h3>
                     <div class="main-grid" style="grid-template-columns: 1fr 1fr 1fr; gap:15px;">
-                        <div><label>رقم الأوردر</label><input type="text" id="fOrder" oninput="filterHistory()" placeholder="بحث برقم الأوردر..."></div>
-                        <div id="branchFilterBox"><label>الفرع</label>
+                        <div><input type="text" id="fOrder" oninput="filterHistory()" placeholder="رقم الأوردر..."></div>
+                        <div id="branchFilterBox">
                             <select id="fBranch" onchange="filterHistory()">
-                                <option value="">عرض الكل</option>
+                                <option value="">الكل</option>
                                 <option>عبده باشا</option>
                                 <option>نادي السكه</option>
                                 <option>يوسف عباس</option>
@@ -235,21 +289,21 @@
                                 <option>العباسيه</option>
                             </select>
                         </div>
-                        <div><label>اسم الطيار</label><input type="text" id="fDriver" oninput="filterHistory()" placeholder="بحث باسم الطيار..."></div>
+                        <div><input type="text" id="fDriver" oninput="filterHistory()" placeholder="اسم الطيار..."></div>
                     </div>
                 </div>
 
-                <div class="table-container">
+                <div class="glass-panel table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>التوقيت</th>
+                                <th>الوقت</th>
                                 <th>الفرع</th>
-                                <th>أوردر #</th>
+                                <th>الأوردر</th>
                                 <th>الطيار</th>
-                                <th>الرد النهائي</th>
-                                <th>بواسطة</th>
-                                <th>تحكم</th>
+                                <th>الحالة</th>
+                                <th>المرسل</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody id="archiveTableBody"></tbody>
@@ -265,28 +319,18 @@
 
     <script>
         // -----------------------------------------
-        // ✅ 1. إعدادات الواتساب (تمت إضافتها تلقائياً)
+        // 1. WhatsApp Config
         // -----------------------------------------
-        const WA_GATEWAY = {
-            instance_id: 'instance157671', 
-            token: 'cpx85mx613v868fe'      
-        };
-
-        // -----------------------------------------
-        // 🛑 2. أرقام المديرين (عدل الأرقام دي للأرقام الحقيقية)
-        // -----------------------------------------
+        const WA_GATEWAY = { instance_id: 'instance157671', token: 'cpx85mx613v868fe' };
+        
+        // 2. Managers Contacts
         const branchManagers = {
-            "عبده باشا": "01271301772", 
-            "نادي السكه": "201022222222",
-            "يوسف عباس": "201033333333",
-            "عباس العقاد": "201044444444",
-            "المعهد": "201055555555",
-            "العباسيه": "201066666666"
+            "عبده باشا": "01271301772", "نادي السكه": "201022222222",
+            "يوسف عباس": "201033333333", "عباس العقاد": "201044444444",
+            "المعهد": "201055555555", "العباسيه": "201066666666"
         };
 
-        // -----------------------------------------
-        // 3. إعدادات Firebase
-        // -----------------------------------------
+        // 3. Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBSwsheoAEJm3pLMI8lhVvzFnLS-a4FrVA",
             authDomain: "break2-5de32.firebaseapp.com",
@@ -299,13 +343,11 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // -----------------------------------------
-        // المستخدمين
-        // -----------------------------------------
+        // Users Data
         const users = {
-            "admin": { pass: "123", role: "admin", name: "الإدارة العامة" },
-            "ahmed": { pass: "123", role: "callcenter", name: "أحمد حمدي" },
-            "mahmoud": { pass: "2002", role: "callcenter", name: "محمود هاني" },
+            "admin": { pass: "123", role: "admin", name: "Master Admin" },
+            "ahmed": { pass: "123", role: "callcenter", name: "Ahmed Hamdy" },
+            "mahmoud": { pass: "2002", role: "callcenter", name: "Mahmoud Hany" },
             "عبده باشا": { pass: "122", role: "branch", name: "عبده باشا" },
             "نادي السكه": { pass: "123", role: "branch", name: "نادي السكه" },
             "يوسف عباس": { pass: "123", role: "branch", name: "يوسف عباس" },
@@ -317,40 +359,28 @@
         let currentUser = null;
         let allData = [];
 
-        // --- WhatsApp Logic ---
+        // WhatsApp Sender
         async function sendWhatsAppToManager(branchName, orderNum, driver, msg) {
             const targetPhone = branchManagers[branchName];
-            if (!targetPhone) return console.log("لا يوجد رقم للمدير");
-
-            const messageBody = 
-`🚨 *بلاغ جديد | Break 2 System*
-━━━━━━━━━━━━━━━━
-🏢 *الفرع:* ${branchName}
-📝 *الأوردر:* ${orderNum}
-🛵 *الطيار:* ${driver}
-⚠️ *الشكوى:* ${msg}
-━━━━━━━━━━━━━━━━
-*الرجاء المتابعة والرد على السيستم.*`;
-
-            const url = `https://api.ultramsg.com/${WA_GATEWAY.instance_id}/messages/chat`;
-            const payload = { token: WA_GATEWAY.token, to: targetPhone, body: messageBody };
-
+            if (!targetPhone) return;
+            const messageBody = `🚨 *بلاغ جديد | Break 2 System*\n━━━━━━━━━━━━━━━━\n🏢 *الفرع:* ${branchName}\n📝 *الأوردر:* ${orderNum}\n🛵 *الطيار:* ${driver}\n⚠️ *الشكوى:* ${msg}\n━━━━━━━━━━━━━━━━`;
             try {
-                await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-                console.log("✅ Whatsapp Sent");
-            } catch (error) { console.error("❌ Whatsapp Error", error); }
+                await fetch(`https://api.ultramsg.com/${WA_GATEWAY.instance_id}/messages/chat`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ token: WA_GATEWAY.token, to: targetPhone, body: messageBody })
+                });
+            } catch (e) { console.error(e); }
         }
 
-        // --- System Logic ---
+        // Auth Logic
         function login() {
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value.trim();
             if (users[u] && users[u].pass === p) {
                 localStorage.setItem('break2_user', JSON.stringify({ id: u, ...users[u] }));
                 location.reload();
-            } else alert("بيانات الدخول غير صحيحة ❌");
+            } else alert("Access Denied ❌");
         }
-
         function logout() { localStorage.removeItem('break2_user'); location.reload(); }
 
         window.onload = () => {
@@ -360,9 +390,10 @@
                 document.getElementById('login-page').classList.add('hidden');
                 document.getElementById('system-content').classList.remove('hidden');
                 document.getElementById('userInfo').innerText = currentUser.name;
-                document.getElementById('roleLabel').innerText = (currentUser.role === 'admin' ? 'مدير عام' : (currentUser.role === 'callcenter' ? 'كول سنتر' : 'فرع'));
+                document.getElementById('roleLabel').innerText = currentUser.role.toUpperCase();
                 setupSideBar();
                 listenToData();
+                setupTiltEffect(); // Activate 3D effects
             }
         };
 
@@ -370,36 +401,33 @@
             const side = document.getElementById('sideAction');
             if (currentUser.role === 'admin' || currentUser.role === 'callcenter') {
                 side.innerHTML = `
-                    <div class="card">
-                        <h3 style="color:var(--primary);">➕ إرسال بلاغ جديد</h3>
-                        <label>اختر الفرع</label>
+                    <div class="glass-panel tilt-effect">
+                        <h3 style="color:var(--primary);"><i class="fas fa-plus-circle"></i> إنشاء بلاغ</h3>
+                        <label>الفرع الهدف</label>
                         <select id="admBranch">
-                            <option value="" disabled selected>-- اختر --</option>
-                            <option>عبده باشا</option>
-                            <option>نادي السكه</option>
-                            <option>يوسف عباس</option>
-                            <option>عباس العقاد</option>
-                            <option>المعهد</option>
-                            <option>العباسيه</option>
+                            <option value="" disabled selected>-- Select --</option>
+                            <option>عبده باشا</option><option>نادي السكه</option>
+                            <option>يوسف عباس</option><option>عباس العقاد</option>
+                            <option>المعهد</option><option>العباسيه</option>
                         </select>
-                        <label>رقم الأوردر #</label>
-                        <input type="text" id="admOrder" placeholder="اكتب الرقم...">
+                        <label>رقم الأوردر</label>
+                        <input type="text" id="admOrder" placeholder="#">
                         <label>اسم الطيار</label>
-                        <input type="text" id="admDriver" placeholder="اكتب الاسم...">
-                        <label>تفاصيل المشكلة</label>
-                        <textarea id="admComplaint" placeholder="اكتب التفاصيل هنا..."></textarea>
-                        <button class="btn-main" onclick="sendComplaint()">🚀 إرسال البلاغ</button>
+                        <input type="text" id="admDriver" placeholder="Name">
+                        <label>المشكلة</label>
+                        <textarea id="admComplaint" placeholder="Details..."></textarea>
+                        <button class="btn-3d" style="margin-top:10px;" onclick="sendComplaint()">إرسال <i class="fas fa-paper-plane"></i></button>
                     </div>`;
             } else {
                 document.getElementById('branchFilterBox').classList.add('hidden');
                 side.innerHTML = `
-                    <div class="card">
-                        <h3 style="color:var(--primary);">💰 طلب سعر توصيل</h3>
-                        <label>رقم الأوردر #</label>
-                        <input type="text" id="brOrder" placeholder="رقم الأوردر">
-                        <label>السعر المقترح (جنية)</label>
-                        <input type="number" id="brPrice" placeholder="السعر">
-                        <button class="btn-main" onclick="sendPriceReq()">📩 إرسال الطلب</button>
+                    <div class="glass-panel tilt-effect">
+                        <h3 style="color:var(--primary);"><i class="fas fa-tags"></i> طلب تسعير</h3>
+                        <label>رقم الأوردر</label>
+                        <input type="text" id="brOrder" placeholder="#">
+                        <label>السعر المقترح</label>
+                        <input type="number" id="brPrice" placeholder="EGP">
+                        <button class="btn-3d" style="margin-top:10px;" onclick="sendPriceReq()">طلب <i class="fas fa-hand-holding-usd"></i></button>
                     </div>`;
             }
         }
@@ -410,7 +438,8 @@
             document.getElementById('btnMain').classList.remove('active');
             document.getElementById('btnArchive').classList.remove('active');
             document.getElementById('page-' + pageId).classList.remove('hidden');
-            document.getElementById('btn' + pageId.charAt(0).toUpperCase() + pageId.slice(1)).classList.add('active');
+            if(pageId === 'main') document.getElementById('btnMain').classList.add('active');
+            else document.getElementById('btnArchive').classList.add('active');
         }
 
         function listenToData() {
@@ -419,13 +448,14 @@
                 snap.forEach(child => {
                     const item = child.val();
                     item.id = child.key;
-                    // حذف طلبات السعر القديمة (أكثر من 20 دقيقة)
-                    if (item.type === 'price_request' && (Date.now() - item.timestamp > 20 * 60 * 1000)) {
+                    if (item.type === 'price_request' && (Date.now() - item.timestamp > 1200000)) {
                         db.ref('system_v6/' + item.id).remove(); return;
                     }
                     allData.push(item);
                 });
                 renderUI();
+                // Play sound if new item (simple check)
+                // document.getElementById('notifSound').play().catch(()=>{}); 
             });
         }
 
@@ -437,55 +467,52 @@
             allData.forEach(item => {
                 if (currentUser.role === 'branch' && item.branch !== currentUser.name) return;
 
-                if (item.type === 'price_request') {
-                    if (currentUser.role === 'branch' && item.status === 'done') return;
-                    if (item.status === 'pending') {
-                        priceDiv.innerHTML += `
-                            <div class="feed-card price">
-                                <div class="card-header">
-                                    <div class="branch-title">💰 طلب تسعير: ${item.branch}</div>
-                                    <span class="meta-tag">#${item.orderNum}</span>
-                                </div>
-                                <div style="display:flex; gap:10px; align-items:center;">
-                                    <span style="font-weight:bold; font-size:1.1rem; color:var(--primary);">السعر المقترح: ${item.suggestedPrice} ج</span>
-                                    ${(currentUser.role === 'admin' || currentUser.role === 'callcenter') ? `
-                                        <div style="display:flex; gap:5px; margin-right:auto;">
-                                            <input type="number" id="admP-${item.id}" value="${item.suggestedPrice}" style="width:70px; padding:5px; height:35px; margin:0;">
-                                            <button class="btn-s btn-ok" onclick="approvePrice('${item.id}')">اعتماد ✅</button>
-                                        </div>
-                                    ` : `<small style="margin-right:auto;">⏳ في انتظار الإدارة</small>`}
-                                </div>
-                            </div>`;
-                    }
+                if (item.type === 'price_request' && item.status === 'pending') {
+                    if (currentUser.role === 'branch') return; // Hide pending price req from branch itself if needed
+                     priceDiv.innerHTML += `
+                        <div class="feed-card price tilt-effect">
+                            <div class="card-header">
+                                <div class="branch-title">💰 ${item.branch}</div>
+                                <span class="meta-tag">#${item.orderNum}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-size:1.2rem; font-weight:bold; color:var(--primary);">${item.suggestedPrice} EGP</span>
+                                ${(currentUser.role === 'admin' || currentUser.role === 'callcenter') ? `
+                                    <div style="display:flex; gap:5px;">
+                                        <input type="number" id="admP-${item.id}" value="${item.suggestedPrice}" style="width:70px; padding:5px; height:auto; margin:0;">
+                                        <button class="btn-s btn-ok" onclick="approvePrice('${item.id}')">OK</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>`;
                 } else if (item.type === 'complaint' && item.status === 'pending') {
                     activeDiv.innerHTML += `
-                        <div class="feed-card fade-in">
+                        <div class="feed-card tilt-effect">
                             <div class="card-header">
-                                <div class="branch-title">📍 ${item.branch}</div>
-                                <span class="meta-tag">👤 ${item.senderName || 'النظام'}</span>
+                                <div class="branch-title"><i class="fas fa-map-marker-alt" style="color:#ef4444;"></i> ${item.branch}</div>
+                                <span class="meta-tag"><i class="fas fa-user-edit"></i> ${item.senderName}</span>
                             </div>
-                            <div style="font-size:0.9rem; color:#64748b; margin-bottom:5px;">
-                                🛵 طيار: <b>${item.driver}</b> | 🔢 أوردر: <b>#${item.orderNum}</b>
+                            <div style="margin-bottom:8px; font-size:0.9rem; color:#94a3b8;">
+                                <span>🛵 ${item.driver}</span> | <span>📦 #${item.orderNum}</span>
                             </div>
-                            <div class="card-body">
-                                "${item.msg}"
-                            </div>
+                            <div class="msg-bubble">"${item.msg}"</div>
                             ${currentUser.role === 'branch' ? `
-                                <div class="action-area">
+                                <div style="margin-top:15px; border-top:1px dashed rgba(255,255,255,0.2); padding-top:10px;">
                                     <div class="btn-row">
-                                        <button class="btn-s btn-ok" onclick="replyComp('${item.id}', 'تم الحل بالكامل ✅')">كامل ✅</button>
-                                        <button class="btn-s btn-info" onclick="replyComp('${item.id}', 'تم مراجعة الأوردر 👍')">تمام 👍</button>
+                                        <button class="btn-s btn-ok" onclick="replyComp('${item.id}', 'تم الحل ✅')">تم الحل ✅</button>
+                                        <button class="btn-s btn-info" onclick="replyComp('${item.id}', 'تمت المراجعة 👍')">مراجعة 👍</button>
                                     </div>
-                                    <div style="display:flex; gap:5px;">
-                                        <input type="text" id="reason-${item.id}" placeholder="اكتب رد مخصص..." style="margin:0;">
-                                        <button class="btn-s btn-send-note" onclick="sendReason('${item.id}')">رد</button>
+                                    <div style="display:flex; gap:5px; margin-top:8px;">
+                                        <input type="text" id="reason-${item.id}" placeholder="رد كتابي..." style="margin:0; background:rgba(0,0,0,0.2);">
+                                        <button class="btn-s" style="background:#475569; width:auto; flex:none;" onclick="sendReason('${item.id}')"><i class="fas fa-reply"></i></button>
                                     </div>
                                 </div>
-                            ` : `<div style="text-align:center; padding:5px; background:#f1f5f9; border-radius:8px; font-size:0.85rem;">⏳ بانتظار رد الفرع...</div>`}
+                            ` : `<div style="text-align:center; padding:10px; margin-top:10px; background:rgba(255,255,255,0.05); border-radius:8px; font-size:0.8rem;">⏳ Waiting for branch...</div>`}
                         </div>`;
                 }
             });
             filterHistory();
+            setupTiltEffect(); // Re-apply 3D logic to new elements
         }
 
         function filterHistory() {
@@ -504,71 +531,70 @@
             });
 
             if(history.length === 0) {
-                body.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px;">لا توجد سجلات مطابقة للبحث</td></tr>`;
+                body.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px;">No Data Found</td></tr>`;
                 return;
             }
 
             history.reverse().forEach(item => {
                 body.innerHTML += `<tr>
-                    <td style="font-size:0.85rem; color:#64748b;">${item.time || '-'}</td>
-                    <td><span style="font-weight:700;">${item.branch}</span></td>
+                    <td style="color:#94a3b8; font-size:0.8rem;">${item.time}</td>
+                    <td>${item.branch}</td>
                     <td>#${item.orderNum}</td>
-                    <td>${item.driver || '-'}</td>
-                    <td><span class="status-badge done">${item.reply || 'تم'}</span></td>
-                    <td><small>${item.senderName || 'System'}</small></td>
-                    <td>${currentUser.role === 'admin' ? `<button onclick="deleteItem('${item.id}')" style="color:var(--danger); background:none; border:none; cursor:pointer; font-weight:bold;">حذف 🗑️</button>` : '-'}</td>
+                    <td>${item.driver}</td>
+                    <td><span class="status-badge">${item.reply}</span></td>
+                    <td>${item.senderName}</td>
+                    <td>${currentUser.role === 'admin' ? `<i class="fas fa-trash" style="color:var(--danger); cursor:pointer;" onclick="deleteItem('${item.id}')"></i>` : ''}</td>
                 </tr>`;
             });
         }
 
-        // --- Actions ---
+        // Logic Actions
         function sendComplaint() {
-            const b = document.getElementById('admBranch').value;
-            const o = document.getElementById('admOrder').value;
-            const d = document.getElementById('admDriver').value;
-            const m = document.getElementById('admComplaint').value;
-            if(!b || !o || !m) return alert("❌ يرجى ملء جميع الحقول المطلوبة");
-            
-            db.ref('system_v6').push({
-                type: 'complaint', branch: b, orderNum: o, driver: d, msg: m, status: 'pending', 
-                senderName: currentUser.name, time: new Date().toLocaleString('ar-EG')
-            });
-
+            const b = document.getElementById('admBranch').value, o = document.getElementById('admOrder').value, d = document.getElementById('admDriver').value, m = document.getElementById('admComplaint').value;
+            if(!b || !o || !m) return alert("Error: Missing Data");
+            db.ref('system_v6').push({ type: 'complaint', branch: b, orderNum: o, driver: d, msg: m, status: 'pending', senderName: currentUser.name, time: new Date().toLocaleString('ar-EG') });
             sendWhatsAppToManager(b, o, d, m);
-
-            document.getElementById('admOrder').value = ""; 
-            document.getElementById('admDriver').value = "";
-            document.getElementById('admComplaint').value = "";
-            alert("✅ تم إرسال البلاغ بنجاح");
+            document.getElementById('admOrder').value = ""; document.getElementById('admDriver').value = ""; document.getElementById('admComplaint').value = "";
         }
-
         function sendPriceReq() {
-            const o = document.getElementById('brOrder').value;
-            const p = document.getElementById('brPrice').value;
-            if(!o || !p) return alert("❌ اكمل البيانات");
-            db.ref('system_v6').push({
-                type: 'price_request', branch: currentUser.name, orderNum: o, suggestedPrice: p, 
-                status: 'pending', timestamp: Date.now(), time: new Date().toLocaleString('ar-EG')
-            });
-            document.getElementById('brOrder').value = ""; document.getElementById('brPrice').value = "";
+            const o = document.getElementById('brOrder').value, p = document.getElementById('brPrice').value;
+            if(!o || !p) return;
+            db.ref('system_v6').push({ type: 'price_request', branch: currentUser.name, orderNum: o, suggestedPrice: p, status: 'pending', timestamp: Date.now(), time: new Date().toLocaleString('ar-EG') });
+            document.getElementById('brOrder').value=""; document.getElementById('brPrice').value="";
         }
-
         function approvePrice(id) {
-            const p = document.getElementById('admP-' + id).value;
-            db.ref('system_v6/' + id).update({ status: 'done', reply: "سعر التوصيل: " + p + " ج", approverName: currentUser.name });
+            const p = document.getElementById('admP-'+id).value;
+            db.ref('system_v6/'+id).update({ status: 'done', reply: "Price: "+p, approverName: currentUser.name });
         }
+        function replyComp(id, msg) { db.ref('system_v6/'+id).update({ status: 'done', reply: msg }); }
+        function sendReason(id) { const v = document.getElementById('reason-'+id).value; if(v) replyComp(id, v); }
+        function deleteItem(id) { if(confirm("Delete?")) db.ref('system_v6/'+id).remove(); }
 
-        function replyComp(id, msg) { 
-            db.ref('system_v6/' + id).update({ status: 'done', reply: msg }); 
+        // ------------------------------------------------
+        // 4. Vanilla JS 3D Tilt Logic
+        // ------------------------------------------------
+        function setupTiltEffect() {
+            const cards = document.querySelectorAll('.tilt-effect');
+            cards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left; // x pos within element
+                    const y = e.clientY - rect.top;  // y pos within element
+                    
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    const rotateX = ((y - centerY) / centerY) * -10; // Max rotation deg
+                    const rotateY = ((x - centerX) / centerX) * 10;
+
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = `perspective(1000px) rotateX(0) rotateY(0) scale(1)`;
+                });
+            });
         }
-
-        function sendReason(id) {
-            const val = document.getElementById('reason-' + id).value.trim();
-            if(!val) return alert("اكتب الرد أولاً");
-            replyComp(id, val);
-        }
-
-        function deleteItem(id) { if(confirm("هل أنت متأكد من الحذف؟")) db.ref('system_v6/' + id).remove(); }
     </script>
 </body>
 </html>
