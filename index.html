@@ -73,7 +73,7 @@
             <div class="login-card">
                 <div style="font-size: 50px; margin-bottom: 10px;">🛡️</div>
                 <h2 style="margin-bottom: 5px;">نظام Break 2</h2>
-                <p style="color: #64748b; margin-bottom: 25px; font-size: 14px;">الإدارة - الكول سنتر - الفروع</p>
+                <p style="color: #64748b; margin-bottom: 25px; font-size: 14px;">تسجيل الدخول للنظام</p>
                 <input type="text" id="username" placeholder="اسم المستخدم">
                 <input type="password" id="password" placeholder="كلمة المرور">
                 <button class="main-btn" onclick="login()">دخول النظام</button>
@@ -134,12 +134,29 @@
         </div>
     </div>
 
-    <!-- Firebase -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <script>
-        // تكوين Firebase
+        // ✅ تم وضع بياناتك من الصورة هنا
+        const WA_GATEWAY = {
+            instance_id: 'instance157671', 
+            token: 'cpx85mx613v868fe'      
+        };
+
+        // 🛑 هام: قم بتعديل أرقام المديرين هنا بأرقامهم الحقيقية
+        // الرقم يجب أن يكون: 20xxxxxxxxxx
+        const branchManagers = {
+            "عبده باشا": "01271301772", 
+            "نادي السكه": "201022222222",
+            "يوسف عباس": "201033333333",
+            "عباس العقاد": "201044444444",
+            "المعهد": "201055555555",
+            "العباسيه": "201066666666"
+        };
+
+        // إعدادات Firebase (نفس إعداداتك القديمة)
         const firebaseConfig = {
             apiKey: "AIzaSyBSwsheoAEJm3pLMI8lhVvzFnLS-a4FrVA",
             authDomain: "break2-5de32.firebaseapp.com",
@@ -152,7 +169,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // المستخدمين وأسماء الفروع الجديدة
+        // المستخدمين
         const users = {
             "admin": { pass: "123", role: "admin", name: "الإدارة" },
             "ahmed": { pass: "123", role: "callcenter", name: "أحمد حمدي" },
@@ -167,6 +184,47 @@
 
         let currentUser = null;
         let allData = [];
+
+        // --- دالة الإرسال التلقائي للواتساب ---
+        async function sendWhatsAppToManager(branchName, orderNum, driver, msg) {
+            const targetPhone = branchManagers[branchName];
+            
+            if (!targetPhone) {
+                console.log("⚠️ لا يوجد رقم هاتف مسجل لمدير فرع: " + branchName);
+                return;
+            }
+
+            const messageBody = 
+`🚨 *بلاغ جديد | Break 2*
+------------------------
+📍 *الفرع:* ${branchName}
+🔢 *أوردر رقم:* ${orderNum}
+🛵 *الطيار:* ${driver}
+📝 *الشكوى:* ${msg}
+------------------------
+*يرجى مراجعة النظام والرد فوراً.*`;
+
+            const url = `https://api.ultramsg.com/${WA_GATEWAY.instance_id}/messages/chat`;
+            const payload = {
+                token: WA_GATEWAY.token,
+                to: targetPhone,
+                body: messageBody
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                console.log("✅ حالة الواتساب:", result);
+            } catch (error) {
+                console.error("❌ فشل إرسال الواتساب:", error);
+            }
+        }
+
+        // --- دوال النظام ---
 
         function login() {
             const u = document.getElementById('username').value.trim();
@@ -324,19 +382,24 @@
             });
         }
 
-        // --- العمليات ---
         function sendComplaint() {
             const b = document.getElementById('admBranch').value;
             const o = document.getElementById('admOrder').value;
             const d = document.getElementById('admDriver').value;
             const m = document.getElementById('admComplaint').value;
-            if(!b || !o || !m) return alert("اكمل البيانات");
+            if(!b || !o || !m) return alert("الرجاء إكمال البيانات");
             
             db.ref('system_v6').push({
                 type: 'complaint', branch: b, orderNum: o, driver: d, msg: m, status: 'pending', 
                 senderName: currentUser.name, time: new Date().toLocaleString('ar-EG')
             });
-            document.getElementById('admOrder').value = ""; document.getElementById('admComplaint').value = "";
+
+            sendWhatsAppToManager(b, o, d, m);
+
+            document.getElementById('admOrder').value = ""; 
+            document.getElementById('admDriver').value = "";
+            document.getElementById('admComplaint').value = "";
+            alert("✅ تم إرسال البلاغ وتنبيه الواتساب");
         }
 
         function sendPriceReq() {
