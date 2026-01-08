@@ -1010,43 +1010,142 @@
             async function executeAdvancedAnalyticsSequence() {
                 const from = document.getElementById('reports-date-from').value;
                 const to = document.getElementById('reports-date-to').value;
+
+                if(!from || !to) {
+                    Swal.fire('تنبيه', 'يرجى تحديد الفترة الزمنية أولاً', 'warning');
+                    return;
+                }
+
+                // 1. جلب بيانات يومية الأوردرات من السيرفر
+                let allDays = {};
+                const dSnap = await dbHub.ref('daily_stats').get();
+                allDays = dSnap.val() || {};
+
+                // 2. تصفية الشكاوى بناءً على التاريخ المختار والفرع
                 const ops = Object.values(complaintsCache).filter(o => o.date >= from && o.date <= to);
                 const p = systemSettingsCache.permissions ? (systemSettingsCache.permissions[currentUserSession.title] || {}) : {};
                 const canSeeAll = p.view_all || currentUserSession.branch === 'ALL' || currentUserSession.role === 'SUPER';
 
+                // 3. حساب إجمالي الأوردرات وإجمالي الشكاوى في الفترة المختارة
+                let totalOrdersPeriod = 0;
+                let totalComplaintsPeriod = ops.length;
+
+                // حساب الأوردرات بناءً على صلاحية المشاهدة
+                Object.keys(allDays).forEach(day => {
+                    if(day >= from && day <= to) {
+                        Object.keys(allDays[day]).forEach(br => {
+                            if(canSeeAll || br === currentUserSession.branch) {
+                                totalOrdersPeriod += parseInt(allDays[day][br] || 0);
+                            }
+                        });
+                    }
+                });
+
+                // حساب النسبة المئوية العامة للخطأ في المنظومة
+                // المعادلة: (الشكاوى / الأوردرات) * 100
+                let globalErrorRate = totalOrdersPeriod > 0 ? ((totalComplaintsPeriod / totalOrdersPeriod) * 100).toFixed(2) : 0;
+
+                // 4. تحديث الكروت العلوية (النتائج بالأرقام والنسب)
                 const resolved = ops.filter(o => o.status === 'done').length;
                 document.getElementById('render-analytics-stat-row').innerHTML = `
-                    <div class="analytics-pill-card" style="border-top:12px solid var(--gold-master)"><h2>${ops.length}</h2><p>إجمالي</p></div>
-                    <div class="analytics-pill-card" style="border-top:12px solid var(--success-glow)"><h2>${resolved}</h2><p>مغلق</p></div>
-                    <div class="analytics-pill-card" style="border-top:12px solid var(--danger-pulse)"><h2>${ops.length - resolved}</h2><p>نشط</p></div>
-                    <div class="analytics-pill-card" style="border-top:12px solid var(--accent-navy)"><h2>${ops.length ? Math.round((resolved/ops.length)*100) : 0}%</h2><p>إنجاز</p></div>`;
+                    <div class="analytics-pill-card" style="border-top:12px solid #8b5cf6">
+                        <h2>${totalOrdersPeriod}</h2>
+                        <p>إجمالي الأوردرات</p>
+                    </div>
+                    <div class="analytics-pill-card" style="border-top:12px solid var(--gold-master)">
+                        <h2>${totalComplaintsPeriod}</h2>
+                        <p>إجمالي الشكاوى</p>
+                    </div>
+                    <div class="analytics-pill-card" style="border-top:12px solid #ef4444">
+                        <h2>${globalErrorRate}%</h2>
+                        <p>معدل الخطأ العام</p>
+                    </div>
+                    <div class="analytics-pill-card" style="border-top:12px solid var(--success-glow)">
+                        <h2>${resolved}</h2>
+                        <p>شكاوى مغلقة</p>
+                    </div>
+                    <div class="analytics-pill-card" style="border-top:12px solid var(--accent-navy)">
+                        <h2>${totalComplaintsPeriod ? Math.round((resolved/totalComplaintsPeriod)*100) : 0}%</h2>
+                        <p>نسبة الإنجاز</p>
+                    </div>`;
 
-                const dSnap = await dbHub.ref('daily_stats').get();
-                const allDays = dSnap.val() || {};
-                const labels = [], ratios = [], typeCounts = {};
+                // 5. إعداد بيانات الرسم البياني (نسبة الخطأ لكل فرع على حدة)
+                const labels = [];
+                const branchRates = [];
 
                 branchListCache.forEach(br => {
                     if(!canSeeAll && br !== currentUserSession.branch) return;
+
                     labels.push(br);
                     const brComplaints = ops.filter(o => o.branch === br).length;
                     let brOrders = 0;
-                    Object.keys(allDays).forEach(day => { if(day >= from && day <= to && allDays[day][br]) brOrders += parseInt(allDays[day][br]); });
-                    ratios.push(brOrders > 0 ? ((brComplaints/brOrders)*100).toFixed(2) : 0);
+
+                    Object.keys(allDays).forEach(day => {
+                        if(day >= from && day <= to && allDays[day][br]) {
+                            brOrders += parseInt(allDays[day][br]);
+                        }
+                    });
+
+                    // حساب نسبة الخطأ لكل فرع
+                    let rate = brOrders > 0 ? ((brComplaints / brOrders) * 100).toFixed(2) : 0;
+                    branchRates.push(rate);
                 });
 
+                // 6. تحديث المخطط البياني (الأعمدة)
                 if(analyticsChartInstance) analyticsChartInstance.destroy();
-                analyticsChartInstance = new Chart(document.getElementById('master-reports-canvas'), {
-                    type: 'bar', plugins: [ChartDataLabels],
-                    data: { labels: labels, datasets: [{ label: 'معدل الخطأ %', data: ratios, backgroundColor: '#f59e0b', borderRadius: 15 }] },
-                    options: { scales: { y: {ticks:{color:'#fff'}}, x: {ticks:{color:'#fff'}} }, plugins: { legend:{labels:{color:'#fff'}}, datalabels:{color:'#fff',anchor:'end',align:'top'} } }
+                analyticsChartInstance = new Chart(document.getElementById('master-reports-canvas').getContext('2d'), {
+                    type: 'bar',
+                    plugins: [ChartDataLabels],
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'معدل الخطأ % (شكاوى/أوردرات)',
+                            data: branchRates,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { color: '#fff' }, title: {display:true, text:'النسبة المئوية %', color:'#fff'} },
+                            x: { ticks: { color: '#fff' } }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#fff' } },
+                            datalabels: {
+                                color: '#fff',
+                                anchor: 'end',
+                                align: 'top',
+                                formatter: (v) => v + '%'
+                            }
+                        }
+                    }
                 });
 
-                (canSeeAll ? ops : ops.filter(o => o.branch === currentUserSession.branch)).forEach(o => { typeCounts[o.type||'غير محدد'] = (typeCounts[o.type||'غير محدد']||0)+1; });
+                // 7. تحديث مخطط الأنواع (الدائرة)
+                const typeCounts = {};
+                ops.forEach(o => { typeCounts[o.type || 'أخرى'] = (typeCounts[o.type || 'أخرى'] || 0) + 1; });
+
                 if(analyticsTypeChartInstance) analyticsTypeChartInstance.destroy();
-                analyticsTypeChartInstance = new Chart(document.getElementById('master-types-canvas'), {
-                    type: 'doughnut', plugins: [ChartDataLabels],
-                    data: { labels: Object.keys(typeCounts), datasets: [{ data: Object.values(typeCounts), backgroundColor: ['#f59e0b','#ef4444','#10b981','#1d4ed8','#8b5cf6'], borderWidth:0 }] },
-                    options: { plugins: { legend:{position:'right',labels:{color:'#fff'}}, datalabels:{color:'#000',backgroundColor:'rgba(255,255,255,0.8)',borderRadius:4} } }
+                analyticsTypeChartInstance = new Chart(document.getElementById('master-types-canvas').getContext('2d'), {
+                    type: 'doughnut',
+                    plugins: [ChartDataLabels],
+                    data: {
+                        labels: Object.keys(typeCounts),
+                        datasets: [{
+                            data: Object.values(typeCounts),
+                            backgroundColor: ['#f59e0b','#ef4444','#10b981','#1d4ed8','#8b5cf6'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#fff' } },
+                            datalabels: { color: '#000', backgroundColor: '#fff', borderRadius: 4, font: {weight:'bold'} }
+                        }
+                    }
                 });
             }
 
