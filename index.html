@@ -330,7 +330,7 @@ h1 { font-size: 1.4rem !important; }
             /* تحسين السجل */
             .log-table-row {
                 display: grid;
-                grid-template-columns: 1.2fr 1.5fr 1fr;
+                grid-template-columns: 1.2fr 1.5fr 1fr 1fr;
                 padding: 18px 25px;
                 border-bottom: 1px solid rgba(255,255,255,0.03);
                 font-size: 1rem;
@@ -612,14 +612,26 @@ input, select, textarea {
                 <!-- ADMIN MODULE (UPDATED WITH PRESENCE & LOGS) -->
                 <div id="module-view-admin" class="hidden">
                     
-                    <div class="massive-glass-card" style="padding:40px; margin-bottom:60px; border-top: 5px solid var(--success-glow);">
-                        <h3 style="color:var(--success-glow); font-size:2rem; margin-bottom:30px; display:flex; align-items:center; gap:15px;">
-                            <i class="fas fa-satellite-dish"></i> رادار المنظومة الحية (مباشر)
-                        </h3>
+                    <div class="massive-glass-card" style="padding:40px; margin-bottom:40px; border-top: 5px solid var(--success-glow);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:15px;">
+                            <h3 style="color:var(--success-glow); font-size:1.8rem; margin:0; display:flex; align-items:center; gap:10px;">
+                                <i class="fas fa-satellite-dish"></i> رادار المنظومة الحية
+                            </h3>
 
-                        <!-- هذه الشبكة التي ستعرض الدوائر بجانب بعضها -->
-                        <div id="adm-presence-grid" class="presence-grid">
-                            <!-- سيتم التوليد هنا تلقائياً -->
+                            <!-- اختيار الفرع للرادار -->
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span style="color:var(--text-muted-core);">عرض فرع:</span>
+                                <select id="radar-branch-filter-select" onchange="initPresenceMonitor()" style="width:200px; margin:0; padding:5px 10px;">
+                                    <option value="SHOW_ALL">-- الكل --</option>
+                                    <option value="ALL">الإدارة العليا</option>
+                                    <!-- الفروع الباقية هتضاف تلقائياً -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- شبكة الرادار -->
+                        <div id="adm-presence-grid" class="presence-grid" style="min-height:100px;">
+                            <!-- الموظفين هيظهروا هنا -->
                         </div>
                     </div>
 
@@ -633,6 +645,10 @@ input, select, textarea {
                         <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap: wrap;">
                             <input type="text" id="log-search-name" placeholder="بحث باسم الموظف..." style="flex:2; margin-bottom:0;" onkeyup="applyLogsFilter()">
                             <input type="date" id="log-filter-date" style="flex:1; margin-bottom:0;" onchange="applyLogsFilter()">
+                            <select id="log-filter-branch" style="flex:1; margin-bottom:0;" onchange="applyLogsFilter()">
+                                <option value="">كل الفروع</option>
+                                <!-- سيتم تعبئته تلقائياً -->
+                            </select>
                             <button class="btn-vip-execute-master" style="width:auto; padding:0 30px; font-size:1rem;" onclick="resetLogsFilter()">إعادة ضبط</button>
                         </div>
 
@@ -641,6 +657,7 @@ input, select, textarea {
                                 <div>الموظف</div>
                                 <div>الحدث (فتح/قفل)</div>
                                 <div>التوقيت الدقيق</div>
+                                <div>الفرع</div>
                             </div>
                             <div id="adm-access-logs-list"></div>
                         </div>
@@ -858,20 +875,20 @@ input, select, textarea {
 
                 connectedRef.on('value', (snap) => {
                     if (snap.val() === true) {
-                        // --- 1. تسجيل سطر جديد في السجل فور الدخول ---
+                        // تسجيل الدخول مع حفظ الفرع
                         logsRef.push({
                             uid: userData.id,
                             user: userData.name,
-                            action: "🟢 متصل الآن (ONLINE)",
+                            branch: userData.branch, // إضافة الفرع هنا
+                            action: "🟢 فتح الموقع (ONLINE)",
                             timestamp: firebase.database.ServerValue.TIMESTAMP
                         });
 
-                        // --- 2. إعداد تسجيل الخروج التلقائي عند إغلاق المتصفح ---
                         const offlineLogRef = logsRef.push();
-                        // استخدام onDisconnect لضمان التسجيل حتى لو انقطع الإنترنت فجأة
                         offlineLogRef.onDisconnect().set({
                             uid: userData.id,
                             user: userData.name,
+                            branch: userData.branch, // إضافة الفرع هنا
                             action: "🔴 غادر الموقع (OFFLINE)",
                             timestamp: firebase.database.ServerValue.TIMESTAMP
                         });
@@ -881,11 +898,11 @@ input, select, textarea {
                             last_changed: firebase.database.ServerValue.TIMESTAMP
                         });
 
-                        // --- 3. تحديث حالة الرادار الحالي ---
                         presenceRef.set({
                             state: 'online',
                             name: userData.name,
                             title: userData.title,
+                            branch: userData.branch, // إضافة الفرع هنا للرادار
                             last_changed: firebase.database.ServerValue.TIMESTAMP
                         });
                     }
@@ -920,56 +937,44 @@ input, select, textarea {
             };
 
             async function initPresenceMonitor() {
-                // 1. جلب قائمة الموظفين الحاليين أولاً للتأكد من وجودهم
+                const radarFilter = document.getElementById('radar-branch-filter-select');
+                const selectedBranch = radarFilter ? radarFilter.value : "SHOW_ALL";
+                
                 const usersSnap = await dbHub.ref('users').once('value');
                 const validUsers = usersSnap.val() || {};
-
-                // 2. مراقبة الرادار (جدول الحالات)
                 dbHub.ref('users_presence').on('value', snap => {
                     const presenceData = snap.val() || {};
                     const grid = document.getElementById('adm-presence-grid');
-                    if(grid) grid.innerHTML = '';
+                    if(!grid) return;
+                    grid.innerHTML = '';
 
                     Object.keys(presenceData).forEach(uid => {
                         const u = presenceData[uid];
+                        // التحقق من صحة المستخدم
+                        if (!validUsers[uid] && uid !== 'super') return;
 
-                        // --- التعديل الجوهري هنا ---
-                        // لو الموظف مش موجود في قائمة الحسابات (validUsers)، امسحه من الرادار فوراً وماتظهروش
-                        if (!validUsers[uid] && uid !== 'super') {
-                            dbHub.ref('users_presence/' + uid).remove(); // تنظيف تلقائي للداتا القديمة
-                            return;
-                        }
-                        // --------------------------
+                        // تطبيق الفلتر: لو اخترت فرع معين يظهر هو بس، لو "الكل" يظهر الكل
+                        if (selectedBranch !== "SHOW_ALL" && u.branch !== selectedBranch) return;
 
                         const isOnline = u.state === 'online';
-                        const initial = u.name ? u.name.charAt(0) : '?';
-                        const lastTime = new Date(u.last_changed).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
-
-                        if(grid) {
-                            grid.innerHTML += `
-                                <div class="presence-user-orb ${isOnline ? 'orb-online' : 'orb-offline'}"
-                                     onclick="viewUserProfileActivity('${uid}', '${u.name}')">
-                                    <div class="avatar-ring">${initial}<div class="status-indicator"></div></div>
-                                    <div class="user-name-label">${u.name}</div>
-                                </div>`;
-                        }
+                        grid.innerHTML += `
+                            <div class="presence-user-orb ${isOnline ? 'orb-online' : 'orb-offline'}" 
+                                 onclick="viewUserProfileActivity('${uid}', '${u.name}')">
+                                <div class="avatar-ring">
+                                    ${u.name ? u.name.charAt(0) : '?'}
+                                    <div class="status-indicator"></div>
+                                </div>
+                                <div class="user-name-label">${u.name}</div>
+                                <div style="font-size:0.7rem; color:var(--gold-master); opacity:0.8;">${u.branch === 'ALL' ? 'إدارة' : (u.branch || '')}</div>
+                            </div>`;
                     });
-                });
-
-                // 3. مراقبة سجل النشاط (الجدول) كما هي
-                dbHub.ref('access_logs').limitToLast(150).on('value', snap => {
-                    allAccessLogsCache = [];
-                    snap.forEach(child => {
-                        allAccessLogsCache.push({ id: child.key, ...child.val() });
-                    });
-                    allAccessLogsCache.reverse();
-                    applyLogsFilter();
                 });
             }
 
             function applyLogsFilter() {
                 const searchName = document.getElementById('log-search-name').value.toLowerCase();
                 const filterDate = document.getElementById('log-filter-date').value;
+                const filterBranch = document.getElementById('log-filter-branch').value;
                 const list = document.getElementById('adm-access-logs-list');
 
                 if(!list) return;
@@ -980,7 +985,8 @@ input, select, textarea {
                     // استخراج التاريخ من الـ timestamp
                     const logDate = new Date(log.timestamp).toISOString().split('T')[0];
                     const matchesDate = filterDate ? (logDate === filterDate) : true;
-                    return matchesName && matchesDate;
+                    const matchesBranch = filterBranch ? (log.branch === filterBranch) : true;
+                    return matchesName && matchesDate && matchesBranch;
                 });
 
                 filtered.forEach(log => {
@@ -997,6 +1003,7 @@ input, select, textarea {
                                 <span>${timeStr}</span>
                                 ${currentUserSession.role === 'SUPER' ? `<i class="fas fa-trash-alt" style="color:#ef4444; cursor:pointer; margin-right:10px;" onclick="deleteSpecificLog('${log.id}')"></i>` : ''}
                             </div>
+                            <div style="color:var(--gold-master);">${log.branch || '---'}</div>
                         </div>`;
                 });
             }
@@ -1004,6 +1011,7 @@ input, select, textarea {
             function resetLogsFilter() {
                 document.getElementById('log-search-name').value = '';
                 document.getElementById('log-filter-date').value = '';
+                document.getElementById('log-filter-branch').value = '';
                 applyLogsFilter();
             }
 
@@ -1451,10 +1459,27 @@ input, select, textarea {
 
             // Admin Utilities
             function syncUiDropdownSelections() {
-                const h = branchListCache.map(b => `<option>${b}</option>`).join('');
-                document.getElementById('f-branch-master-sel').innerHTML = h; document.getElementById('adm-whatsapp-br-sel').innerHTML = h; document.getElementById('reg-user-branch-sel-core').innerHTML = `<option value="ALL">الإدارة العليا</option>`+h;
-                const rh = Object.keys(systemSettingsCache.custom_ranks||{}).map(r => `<option>${r}</option>`).join('');
-                document.getElementById('adm-rank-matrix-sel').innerHTML = `<option value="">-- اختر --</option>`+rh; document.getElementById('reg-user-rank-sel-core').innerHTML = rh;
+                // 1. تحضير خيارات الفروع
+                const h = branchListCache.map(b => `<option value="${b}">${b}</option>`).join('');
+                
+                // 2. تحديث قائمة إنشاء البلاغ وقائمة الواتساب وقائمة تسجيل الموظفين
+                if(document.getElementById('f-branch-master-sel')) document.getElementById('f-branch-master-sel').innerHTML = h;
+                if(document.getElementById('adm-whatsapp-br-sel')) document.getElementById('adm-whatsapp-br-sel').innerHTML = h;
+                if(document.getElementById('reg-user-branch-sel-core')) document.getElementById('reg-user-branch-sel-core').innerHTML = `<option value="ALL">الإدارة العليا</option>` + h;
+                
+                // 3. تحديث قائمة فلتر الرادار (اللي سألت عليها)
+                const radarFilter = document.getElementById('radar-branch-filter-select');
+                if(radarFilter) {
+                    // بنحفظ القيمة المختارة حالياً عشان متتغيرش مع التحديث
+                    const currentVal = radarFilter.value;
+                    radarFilter.innerHTML = `<option value="SHOW_ALL">-- الكل --</option><option value="ALL">الإدارة العليا</option>` + h;
+                    radarFilter.value = currentVal;
+                }
+
+                // 4. تحديث قائمة الرتب
+                const rh = Object.keys(systemSettingsCache.custom_ranks || {}).map(r => `<option value="${r}">${r}</option>`).join('');
+                if(document.getElementById('adm-rank-matrix-sel')) document.getElementById('adm-rank-matrix-sel').innerHTML = `<option value="">-- اختر --</option>` + rh;
+                if(document.getElementById('reg-user-rank-sel-core')) document.getElementById('reg-user-rank-sel-core').innerHTML = rh;
             }
             function renderAdminBranchScrollBox() {
                 const b = document.getElementById('adm-branches-scroll-box'); b.innerHTML = "";
