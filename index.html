@@ -350,27 +350,34 @@
                         100% { transform: scale(1); opacity: 1; }
                     }
 
-                    /* تحسين السجل */
-                    .log-table-row {
-                        display: grid;
-                        /* تقسيم المساحة لـ 4 أعمدة متوازنة */
-                        grid-template-columns: 1.5fr 1.5fr 1.2fr 1fr;
-                        padding: 15px 20px;
-                        border-bottom: 1px solid rgba(255,255,255,0.03);
-                        font-size: 0.95rem;
-                        align-items: center;
-                        text-align: right;
-                    }
+            /* تنسيق سجل النشاط - 4 أعمدة */
+            .log-table-row {
+                display: grid;
+                /* الموظف (يمين) | الحدث | التوقيت | الفرع (يسار) */
+                grid-template-columns: 1.5fr 1.5fr 1.2fr 1fr;
+                padding: 12px 20px;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+                font-size: 0.9rem;
+                align-items: center;
+                direction: rtl; /* التأكد من الاتجاه من اليمين لليسان */
+            }
 
-                    .log-header {
-                        font-weight: 900;
-                        color: var(--gold-master);
-                        background: rgba(245, 158, 11, 0.05);
-                        border-bottom: 2px solid var(--gold-master);
-                        position: sticky;
-                        top: 0;
-                        z-index: 10;
-                    }
+            .log-header {
+                font-weight: 800;
+                color: var(--gold-master);
+                background: rgba(255, 255, 255, 0.02);
+                border-bottom: 2px solid var(--gold-master);
+                position: sticky;
+                top: 0;
+                z-index: 5;
+            }
+
+            .scrollable-admin-list {
+                max-height: 400px;
+                overflow-y: auto;
+                background: rgba(0,0,0,0.2);
+                border-radius: 0 0 10px 10px;
+            }
 
                     .log-action-pill {
                         padding: 5px 12px;
@@ -656,37 +663,34 @@
                                 </div>
                             </div>
 
-                            <!-- قسم سجل الدخول والخروج مع الفلاتر -->
-                            <div class="massive-glass-card" style="padding:40px; margin-top:40px; border-bottom: 5px solid var(--gold-master);">
-                                <h4 style="color:var(--gold-master); font-size:1.8rem; margin-bottom:20px;">
-                                    <i class="fas fa-history"></i> سجل النشاط التفصيلي والفلاتر
-                                </h4>
+                            <div class="massive-glass-card" style="padding:30px; margin-top:30px; border-bottom: 4px solid var(--gold-master);">
+                                <h3 style="color:var(--gold-master); margin-bottom:25px;"><i class="fas fa-history"></i> سجل النشاط التفصيلي</h3>
 
-                                <!-- شريط الفلترة -->
-                                <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap: wrap;">
-                                    <input type="text" id="log-search-name" placeholder="بحث باسم الموظف..." style="flex:2; margin-bottom:0;" onkeyup="applyLogsFilter()">
-                                    <input type="date" id="log-filter-date" style="flex:1; margin-bottom:0;" onchange="applyLogsFilter()">
-                                    <select id="log-filter-branch" style="flex:1; margin-bottom:0;" onchange="applyLogsFilter()">
+                                <!-- شريط الفلاتر -->
+                                <div style="display:flex; gap:10px; margin-bottom:20px; flex-direction: row-reverse;">
+                                    <input type="text" id="log-search-name" placeholder="بحث بالاسم..." style="flex:2; margin:0;" onkeyup="applyLogsFilter()">
+                                    <input type="date" id="log-filter-date" style="flex:1; margin:0;" onchange="applyLogsFilter()">
+                                    <select id="log-filter-branch" style="flex:1; margin:0;" onchange="applyLogsFilter()">
                                         <option value="">كل الفروع</option>
-                                        <!-- سيتم تعبئته تلقائياً -->
                                     </select>
-                                    <button class="btn-vip-execute-master" style="width:auto; padding:0 30px; font-size:1rem;" onclick="resetLogsFilter()">إعادة ضبط</button>
+                                    <button class="btn-vip-execute-master" style="width:auto; padding:0 20px;" onclick="resetLogsFilter()">إعادة ضبط</button>
                                 </div>
 
-                                <div class="scrollable-admin-list" style="height: 450px;">
-                                    <div class="log-table-row log-header" style="position: sticky; top: 0; z-index: 10; background: var(--primary-bg-core);">
+                                <!-- حاوية الجدول -->
+                                <div style="border: 1px solid rgba(255,255,255,0.1); border-radius:10px; overflow:hidden;">
+                                    <div class="log-table-row log-header">
                                         <div>الموظف</div>
                                         <div>الحدث (فتح/قفل)</div>
                                         <div>التوقيت الدقيق</div>
                                         <div>الفرع</div>
                                     </div>
-                                    <div id="adm-access-logs-list"></div>
+                                    <div id="adm-access-logs-list" class="scrollable-admin-list">
+                                        <!-- البيانات تظهر هنا -->
+                                    </div>
                                 </div>
 
-                                <button class="btn-vip-execute-master"
-                                        style="width:auto; background:var(--danger-pulse); padding:0 30px;"
-                                        onclick="clearAllSystemLogs()">
-                                    <i class="fas fa-eraser"></i> تصفير السجل
+                                <button class="btn-vip-execute-master" style="background:var(--danger-pulse); width:auto; margin-top:15px; font-size:0.8rem;" onclick="clearAllSystemLogs()">
+                                    <i class="fas fa-trash"></i> تصفير السجل
                                 </button>
                             </div>
 
@@ -1057,12 +1061,12 @@
 
                             list.innerHTML += `
                                 <div class="log-table-row">
-                                    <div style="font-weight:bold;">${log.user}</div>
+                                    <div style="font-weight:600;">${log.user}</div>
                                     <div style="color:${isOnline ? 'var(--success-glow)' : '#ef4444'}">
                                         <i class="fas ${isOnline ? 'fa-sign-in-alt' : 'fa-sign-out-alt'}"></i> ${log.action}
                                     </div>
-                                    <div style="direction:ltr; font-family:monospace;">${timeStr}</div>
-                                    <div style="color:var(--gold-master); font-size:0.85rem;">${log.branch || 'الإدارة'}</div>
+                                    <div style="direction:ltr; font-family:monospace; font-size:0.85rem;">${timeStr}</div>
+                                    <div style="color:var(--gold-master);">${log.branch || '---'}</div>
                                 </div>`;
                         });
                     }
@@ -1143,6 +1147,15 @@
                             complaintsCache = snap.val() || {};
                             renderLiveBroadcastMatrix();
                             runArchiveRefreshSequence();
+                        });
+                        // 3. سماع التغييرات (يجب أن تكون داخل initPresenceMonitor أو window.onload)
+                        dbHub.ref('access_logs').limitToLast(150).on('value', snap => {
+                            allAccessLogsCache = [];
+                            snap.forEach(child => {
+                                allAccessLogsCache.push({ id: child.key, ...child.val() });
+                            });
+                            allAccessLogsCache.reverse(); // الأحدث فوق
+                            applyLogsFilter(); // تحديث العرض فوراً
                         });
                     }
 
@@ -1521,12 +1534,12 @@
                     function syncUiDropdownSelections() {
                         // 1. تحضير خيارات الفروع
                         const h = branchListCache.map(b => `<option value="${b}">${b}</option>`).join('');
-                        
+
                         // 2. تحديث قائمة إنشاء البلاغ وقائمة الواتساب وقائمة تسجيل الموظفين
                         if(document.getElementById('f-branch-master-sel')) document.getElementById('f-branch-master-sel').innerHTML = h;
                         if(document.getElementById('adm-whatsapp-br-sel')) document.getElementById('adm-whatsapp-br-sel').innerHTML = h;
                         if(document.getElementById('reg-user-branch-sel-core')) document.getElementById('reg-user-branch-sel-core').innerHTML = `<option value="ALL">الإدارة العليا</option>` + h;
-                        
+
                         // 3. تحديث قائمة فلتر الرادار (اللي سألت عليها)
                         const radarFilter = document.getElementById('radar-branch-filter-select');
                         if(radarFilter) {
@@ -1540,6 +1553,18 @@
                         const rh = Object.keys(systemSettingsCache.custom_ranks || {}).map(r => `<option value="${r}">${r}</option>`).join('');
                         if(document.getElementById('adm-rank-matrix-sel')) document.getElementById('adm-rank-matrix-sel').innerHTML = `<option value="">-- اختر --</option>` + rh;
                         if(document.getElementById('reg-user-rank-sel-core')) document.getElementById('reg-user-rank-sel-core').innerHTML = rh;
+
+                        // 5. تحديث قائمة الفروع في السجل
+                        updateLogBranchDropdown();
+                    }
+
+                    // 1. دالة تحديث قائمة الفروع في السجل (تأكد من استدعائها في syncUiDropdownSelections)
+                    function updateLogBranchDropdown() {
+                        const logBrSelect = document.getElementById('log-filter-branch');
+                        if(logBrSelect) {
+                            logBrSelect.innerHTML = '<option value="">كل الفروع</option><option value="ALL">الإدارة العليا</option>' +
+                                branchListCache.map(b => `<option value="${b}">${b}</option>`).join('');
+                        }
                     }
                     function renderAdminBranchScrollBox() {
                         const b = document.getElementById('adm-branches-scroll-box'); b.innerHTML = "";
