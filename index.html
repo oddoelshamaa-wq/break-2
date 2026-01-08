@@ -202,69 +202,75 @@
             .login-card-massive { width: 650px; padding: 100px 80px; text-align: center; border: 6px solid var(--gold-master); }
             .hidden { display: none !important; }
 
+            /* --- رادار VIP المدمج والأنيق --- */
             .presence-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-                gap: 25px;
-                margin-bottom: 40px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px; /* مسافة صغيرة بين الأعضاء */
+                justify-content: flex-start; /* بجانب بعض من اليمين */
+                padding: 10px;
             }
 
-            .user-presence-card {
-                background: rgba(255, 255, 255, 0.03);
-                border: 1px solid rgba(245, 158, 11, 0.1);
-                padding: 25px;
-                border-radius: 20px;
+            .presence-user-orb {
+                width: 75px; /* عرض مدمج جداً */
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                text-align: center;
-                position: relative;
-                overflow: hidden;
-                backdrop-filter: blur(10px);
-                transition: all 0.4s ease;
+                cursor: pointer;
+                transition: all 0.3s ease;
             }
 
-            .user-presence-card:hover {
-                transform: translateY(-5px);
-                background: rgba(245, 158, 11, 0.05);
-                border-color: var(--gold-master);
-                box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 15px rgba(245, 158, 11, 0.1);
-            }
+            .presence-user-orb:hover { transform: scale(1.1); }
 
-            .presence-avatar {
-                width: 60px;
-                height: 60px;
+            /* الأفاتار الصغير والأنيق */
+            .avatar-ring {
+                width: 50px; /* حجم صغير جداً */
+                height: 50px;
                 border-radius: 50%;
-                background: linear-gradient(135deg, #1e293b, #0f172a);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 1.5rem;
+                background: #161b22;
+                border: 2px solid #30363d;
+                font-size: 1.2rem;
                 font-weight: bold;
-                color: var(--gold-master);
-                margin-bottom: 15px;
-                border: 2px solid rgba(255,255,255,0.1);
+                color: #8b949e;
+                position: relative;
             }
 
-            .presence-dot {
+            /* توهج الأونلاين */
+            .orb-online .avatar-ring {
+                border-color: #238636; /* أخضر هادئ */
+                box-shadow: 0 0 10px rgba(35, 134, 54, 0.4);
+                color: #39d353;
+            }
+
+            /* نقطة الحالة المدمجة */
+            .status-indicator {
+                position: absolute;
+                bottom: 2px;
+                right: 2px;
                 width: 12px;
                 height: 12px;
                 border-radius: 50%;
-                position: absolute;
-                top: 20px;
-                right: 20px;
+                border: 2px solid #0d1117;
+                background: #484f58;
             }
 
-            .dot-online {
-                background: var(--success-glow);
-                box-shadow: 0 0 15px var(--success-glow);
-                animation: pulseLive 2s infinite;
+            .orb-online .status-indicator { background: #39d353; }
+
+            .user-name-label {
+                margin-top: 5px;
+                font-size: 0.85rem;
+                color: #f0f6fc;
+                text-align: center;
+                width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
-            .dot-offline {
-                background: #4b5563;
-                box-shadow: 0 0 5px rgba(0,0,0,0.5);
-            }
+            .user-rank-mini { display: none; } /* إخفاء الرتبة لتوفير مساحة */
 
             /* تحسين السجل */
             .log-table-row {
@@ -427,23 +433,32 @@
                 <!-- ADMIN MODULE (UPDATED WITH PRESENCE & LOGS) -->
                 <div id="module-view-admin" class="hidden">
                     
-                    <div class="massive-glass-card" style="padding:50px; margin-bottom:60px; border: 2px solid var(--success-glow); border-top: 10px solid var(--success-glow);">
-                        <div class="radar-header-container">
-                            <h3 style="color:var(--success-glow); font-size:2.4rem; margin:0;">
-                                <i class="fas fa-users-viewfinder"></i> رادار المنظومة الحية
-                            </h3>
-                            <div style="color:var(--text-muted-core); font-weight:800;">تحديث لحظي <i class="fas fa-sync fa-spin"></i></div>
+                    <div class="massive-glass-card" style="padding:40px; margin-bottom:60px; border-top: 5px solid var(--success-glow);">
+                        <h3 style="color:var(--success-glow); font-size:2rem; margin-bottom:30px; display:flex; align-items:center; gap:15px;">
+                            <i class="fas fa-satellite-dish"></i> رادار المنظومة الحية (مباشر)
+                        </h3>
+
+                        <!-- هذه الشبكة التي ستعرض الدوائر بجانب بعضها -->
+                        <div id="adm-presence-grid" class="presence-grid">
+                            <!-- سيتم التوليد هنا تلقائياً -->
+                        </div>
+                    </div>
+
+                    <!-- قسم سجل الدخول والخروج مع الفلاتر -->
+                    <div class="massive-glass-card" style="padding:40px; margin-top:40px; border-bottom: 5px solid var(--gold-master);">
+                        <h4 style="color:var(--gold-master); font-size:1.8rem; margin-bottom:20px;">
+                            <i class="fas fa-history"></i> سجل النشاط التفصيلي والفلاتر
+                        </h4>
+
+                        <!-- شريط الفلترة -->
+                        <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap: wrap;">
+                            <input type="text" id="log-search-name" placeholder="بحث باسم الموظف..." style="flex:2; margin-bottom:0;" onkeyup="applyLogsFilter()">
+                            <input type="date" id="log-filter-date" style="flex:1; margin-bottom:0;" onchange="applyLogsFilter()">
+                            <button class="btn-vip-execute-master" style="width:auto; padding:0 30px; font-size:1rem;" onclick="resetLogsFilter()">إعادة ضبط</button>
                         </div>
 
-                        <div class="scan-line"></div> <!-- خط المسح المتحرك -->
-
-                        <div id="adm-presence-grid" class="presence-grid"></div>
-                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:30px 0;">
-
-                        <!-- جدول سجل الدخول والخروج -->
-                        <h4 style="color:var(--text-muted-core); margin-bottom:20px;">سجل الدخول والخروج (توقيت فتح/غلق الموقع):</h4>
-                        <div class="scrollable-admin-list" style="height: 300px;">
-                            <div class="log-table-row log-header">
+                        <div class="scrollable-admin-list" style="height: 450px;">
+                            <div class="log-table-row log-header" style="position: sticky; top: 0; z-index: 10; background: var(--primary-bg-core);">
                                 <div>الموظف</div>
                                 <div>الحدث (فتح/قفل)</div>
                                 <div>التوقيت الدقيق</div>
@@ -548,6 +563,7 @@
             let branchListCache = [];
             let analyticsChartInstance = null;
             let analyticsTypeChartInstance = null;
+            let allAccessLogsCache = []; // لتخزين السجلات مؤقتاً لسرعة الفلترة
 
             // Security & Presence Logic
             async function runSecurityAuthSequence() {
@@ -637,28 +653,46 @@
             }
 
             function activateUserPresenceTracking(userData) {
+                if (!userData || !userData.id) return;
+
                 const presenceRef = dbHub.ref('users_presence/' + userData.id);
-                const connectedRef = dbHub.ref('.info/connected');
                 const logsRef = dbHub.ref('access_logs');
+                const connectedRef = dbHub.ref('.info/connected');
 
                 connectedRef.on('value', (snap) => {
                     if (snap.val() === true) {
-                        // عند الخروج المفاجئ (قفل المتصفح)
+                        // سجل الدخول في "السجل" فور الاتصال
+                        logsRef.push({
+                            uid: userData.id,
+                            user: userData.name,
+                            action: "🟢 فتح الموقع (ONLINE)",
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
+
+                        // عند الخروج (قفل الصفحة)
                         presenceRef.onDisconnect().update({
                             state: 'offline',
                             last_changed: firebase.database.ServerValue.TIMESTAMP
                         });
+                        
+                        // سجل الخروج في "السجل" عند الانفصال
+                        const offlineLogRef = logsRef.push();
+                        presenceRef.onDisconnect().cancel(); // تنظيف قديم
+                        presenceRef.onDisconnect().set({ state: 'offline', last_changed: firebase.database.ServerValue.TIMESTAMP });
+                        offlineLogRef.onDisconnect().set({
+                            uid: userData.id,
+                            user: userData.name,
+                            action: "🔴 أغلق الموقع (OFFLINE)",
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
 
-                        // تسجيل حالة "متصل الآن" في قاعدة البيانات
+                        // تحديث الحالة الحالية
                         presenceRef.set({
                             state: 'online',
                             name: userData.name,
                             title: userData.title,
                             last_changed: firebase.database.ServerValue.TIMESTAMP
                         });
-
-                        // تسجيل لوج الدخول (اختياري، يفضل وضعه مرة واحدة فقط عند تسجيل الدخول الفعلي)
-                        console.log("System: You are now tracked as ONLINE");
                     }
                 });
             }
@@ -690,9 +724,7 @@
                 }
             };
 
-            // === FUNCTION: PRESENCE MONITOR VIEWER (RADAR) ===
             function initPresenceMonitor() {
-                // 1. Monitor Online/Offline Status (The Radar)
                 dbHub.ref('users_presence').on('value', snap => {
                     const users = snap.val() || {};
                     const grid = document.getElementById('adm-presence-grid');
@@ -700,67 +732,114 @@
 
                     Object.keys(users).forEach(uid => {
                         const u = users[uid];
+                        // فحص الحالة: هل الكلمة 'online' موجودة؟
                         const isOnline = u.state === 'online';
-                        const timeStr = new Date(u.last_changed).toLocaleTimeString('ar-EG');
                         const initial = u.name ? u.name.charAt(0) : '?';
+                        const timeStr = new Date(u.last_changed).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
 
-                        let statusLabel = isOnline ?
-                            `<span style="color:var(--success-glow); font-weight:bold;"><i class="fas fa-circle-check"></i> متصل الآن</span>` :
-                            `<span style="color:#6b7280"><i class="far fa-clock"></i> غادر: ${timeStr}</span>`;
-
+                        // إنشاء الكارت الدائري
                         grid.innerHTML += `
-                            <div class="user-presence-card">
-                                <span class="presence-dot ${isOnline ? 'dot-online' : 'dot-offline'}"></span>
-                                <div class="presence-avatar">${initial}</div>
-                                <div style="font-weight:900; color:var(--text-pure); font-size:1.2rem; margin-bottom:5px;">${u.name}</div>
-                                <div style="font-size:0.9rem; color:var(--gold-master); font-weight:600; margin-bottom:12px; opacity:0.8;">${u.title}</div>
-                                <div style="font-size:0.8rem; background:rgba(0,0,0,0.3); padding:8px 15px; border-radius:10px; width:100%;">
-                                    ${statusLabel}
+                            <div class="presence-user-orb ${isOnline ? 'orb-online' : 'orb-offline'}"
+                                 onclick="viewUserProfileActivity('${uid}', '${u.name}')"
+                                 title="${isOnline ? 'متصل الآن' : 'آخر ظهور: ' + timeStr}">
+
+                                <div class="avatar-ring">
+                                    ${initial}
+                                    <div class="status-indicator"></div>
                                 </div>
+
+                                <div class="user-name-label">${u.name}</div>
+                                <div class="user-rank-mini">${isOnline ? 'أونلاين' : 'غادر ' + timeStr}</div>
                             </div>
                         `;
                     });
                 });
 
-                // 2. Monitor Access Logs (The History)
-                dbHub.ref('access_logs').limitToLast(50).on('value', snap => {
-                    const logs = [];
-                    snap.forEach(child => logs.push(child.val()));
-                    logs.reverse();
+                // ... باقي كود الـ Access Logs يظل كما هو ...
+            }
 
-                    const list = document.getElementById('adm-access-logs-list');
-                    list.innerHTML = '';
-                    logs.forEach(log => {
-                        const time = new Date(log.timestamp).toLocaleString('ar-EG', {
-                            hour: '2-digit', minute: '2-digit', second: '2-digit',
-                            year: 'numeric', month: 'short', day: 'numeric'
-                        });
+            // وظيفة الفلترة الذكية
+            function applyLogsFilter() {
+                const searchName = document.getElementById('log-search-name').value.toLowerCase();
+                const filterDate = document.getElementById('log-filter-date').value;
+                const list = document.getElementById('adm-access-logs-list');
+                list.innerHTML = '';
 
-                        let statusClass = "";
-                        let icon = "";
-                        if(log.action.includes('ONLINE')) {
-                            statusClass = "background: rgba(16, 185, 129, 0.1); color: var(--success-glow); border: 1px solid var(--success-glow);";
-                            icon = '<i class="fas fa-sign-in-alt"></i>';
-                        } else if(log.action.includes('OFFLINE')) {
-                            statusClass = "background: rgba(107, 114, 128, 0.1); color: #9ca3af; border: 1px solid #4b5563;";
-                            icon = '<i class="fas fa-sign-out-alt"></i>';
-                        } else {
-                            statusClass = "background: rgba(239, 68, 68, 0.1); color: var(--danger-pulse); border: 1px solid var(--danger-pulse);";
-                            icon = '<i class="fas fa-power-off"></i>';
-                        }
+                const filtered = allAccessLogsCache.filter(log => {
+                    const matchesName = log.user.toLowerCase().includes(searchName);
+                    const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+                    const matchesDate = filterDate ? (logDate === filterDate) : true;
+                    return matchesName && matchesDate;
+                });
 
-                        list.innerHTML += `
-                            <div class="log-table-row">
-                                <div style="font-weight:bold;"><i class="fas fa-user-circle" style="margin-left:10px; opacity:0.5;"></i> ${log.user}</div>
+                filtered.forEach(log => {
+                    const time = new Date(log.timestamp).toLocaleString('ar-EG');
+                    let statusStyle = log.action.includes('ONLINE') ? 'color:var(--success-glow)' : 'color:#9ca3af';
+                    
+                    list.innerHTML += `
+                        <div class="log-table-row" onclick="viewUserProfileActivity('${log.uid}', '${log.user}')" style="cursor:pointer;">
+                            <div style="font-weight:bold;"><i class="fas fa-user-circle"></i> ${log.user}</div>
+                            <div style="${statusStyle}; font-weight:bold;">${log.action}</div>
+                            <div style="font-size:0.9rem; opacity:0.7;">${time}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            function resetLogsFilter() {
+                document.getElementById('log-search-name').value = '';
+                document.getElementById('log-filter-date').value = '';
+                applyLogsFilter();
+            }
+
+            // === وظيفة بروفايل الموظف (عرض التايم لاين الخاص به) ===
+            async function viewUserProfileActivity(uid, userName) {
+                // إظهار رسالة جاري التحميل
+                Swal.fire({ title: 'جاري جلب السجل...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                // جلب آخر 50 سجل من قاعدة البيانات مباشرة لضمان الدقة
+                const snap = await dbHub.ref('access_logs').orderByChild('uid').equalTo(uid).limitToLast(50).once('value');
+                const logsData = snap.val();
+                
+                let timelineHtml = `<div style="text-align:right; max-height:400px; overflow-y:auto; padding:10px; direction:rtl;">`;
+                
+                if(!logsData) {
+                    timelineHtml += `<p style="text-align:center; padding:20px;">لا توجد سجلات نشاط مسجلة لهذا الموظف بعد.</p>`;
+                } else {
+                    // تحويل السجلات لمصفوفة وترتيبها من الأحدث للأقدم
+                    const sortedLogs = Object.values(logsData).sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    sortedLogs.forEach(l => {
+                        const dateObj = new Date(l.timestamp);
+                        const time = dateObj.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+                        const date = dateObj.toLocaleDateString('ar-EG');
+                        const isOnline = l.action.includes('ONLINE');
+                        
+                        timelineHtml += `
+                            <div style="border-bottom:1px solid #30363d; padding:12px 0; display:flex; justify-content:space-between; align-items:center;">
                                 <div>
-                                    <span class="log-action-pill" style="${statusClass}">
-                                        ${icon} ${log.action}
+                                    <span style="color:${isOnline ? '#39d353' : '#f85149'}; font-size:1.1rem; margin-left:10px;">
+                                        ${isOnline ? '●' : '●'}
                                     </span>
+                                    <b style="color:#f0f6fc;">${l.action.split('(')[0]}</b>
                                 </div>
-                                <div style="font-size:0.85rem; opacity:0.6; font-family: monospace; text-align:left;">${time}</div>
-                            </div>
-                        `;
+                                <div style="text-align:left;">
+                                    <div style="font-size:0.85rem; color:#f0f6fc;">${time}</div>
+                                    <div style="font-size:0.7rem; color:#8b949e;">${date}</div>
+                                </div>
+                            </div>`;
                     });
+                }
+                timelineHtml += `</div>`;
+
+                Swal.fire({
+                    title: `<span style="color:#f59e0b">ملف نشاط: ${userName}</span>`,
+                    html: timelineHtml,
+                    confirmButtonText: 'إغلاق',
+                    confirmButtonColor: '#21262d',
+                    background: '#0d1117',
+                    color: '#f0f6fc',
+                    width: '450px'
                 });
             }
 
