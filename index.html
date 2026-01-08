@@ -1589,16 +1589,33 @@
                         await dbHub.ref('settings/permissions/'+r).set(d); renderSystemToast("تم التحديث","success");
                     }
                     function renderAdminUsersScrollBox() {
-                        const b = document.getElementById('adm-users-scroll-box'); b.innerHTML = "";
+                        const b = document.getElementById('adm-users-scroll-box');
+                        if(!b) return;
+                        b.innerHTML = "";
+
                         dbHub.ref('users').once('value', snap => {
-                            const uObj = snap.val()||{};
+                            const uObj = snap.val() || {};
                             Object.keys(uObj).forEach(uid => {
                                 const u = uObj[uid];
+                                // تخطي السوبر أدمن الأساسي من الحذف لكن مسموح بالتعديل
+                                const isSuper = uid === 'super';
+
                                 b.innerHTML += `
                                     <div class="admin-row-item">
-                                        <div><b style="color:var(--gold-master)">${u.name}</b> <small>(${u.title})</small></div>
-                                        <i class="fas fa-user-minus" style="color:var(--danger-pulse);cursor:pointer;"
-                                        onclick="deleteUserEntirely('${uid}', '${u.name}')"></i>
+                                        <div>
+                                            <b style="color:var(--gold-master)">${u.name}</b>
+                                            <small style="color:var(--text-muted-core)">(${u.title})</small>
+                                            <div style="font-size:0.7rem; opacity:0.6;">الفرع: ${u.branch || '---'}</div>
+                                        </div>
+                                        <div style="display:flex; gap:15px;">
+                                            <!-- زر التعديل -->
+                                            <i class="fas fa-user-edit" style="color:var(--success-glow); cursor:pointer;"
+                                               onclick="openEditUserModal('${uid}')" title="تعديل البيانات"></i>
+
+                                            <!-- زر الحذف -->
+                                            ${!isSuper ? `<i class="fas fa-user-minus" style="color:var(--danger-pulse); cursor:pointer;"
+                                               onclick="deleteUserEntirely('${uid}', '${u.name}')" title="حذف نهائي"></i>` : ''}
+                                        </div>
                                     </div>`;
                             });
                         });
@@ -1607,6 +1624,81 @@
                         const id = document.getElementById('reg-user-id-core').value.trim();
                         const d = { name:document.getElementById('reg-user-fullname-core').value, title:document.getElementById('reg-user-rank-sel-core').value, branch:document.getElementById('reg-user-branch-sel-core').value, pass:document.getElementById('reg-user-pass-core').value };
                         if(id && d.name) await dbHub.ref('users/'+id).set(d).then(()=>renderAdminUsersScrollBox()); renderSystemToast("تم التفعيل","success");
+                    }
+
+                    async function openEditUserModal(uid) {
+                        // 1. جلب بيانات الموظف الحالية من الفايربيز
+                        const snap = await dbHub.ref('users/' + uid).once('value');
+                        const u = snap.val();
+                        if(!u) return;
+
+                        // 2. تحضير خيارات الرتب والفروع من الكاش عشان تظهر في التعديل
+                        const ranksOptions = Object.keys(systemSettingsCache.custom_ranks || {}).map(r => `<option value="${r}" ${u.title === r ? 'selected' : ''}>${r}</option>`).join('');
+                        const branchesOptions = branchListCache.map(b => `<option value="${b}" ${u.branch === b ? 'selected' : ''}>${b}</option>`).join('');
+
+                        // 3. فتح نافذة التعديل باستخدام SweetAlert2
+                        const { value: formValues } = await Swal.fire({
+                            title: `<span style="color:var(--gold-master)">تعديل حساب: ${u.name}</span>`,
+                            background: '#0d1117',
+                            color: '#f0f6fc',
+                            html: `
+                                <div style="text-align:right; direction:rtl;">
+                                    <label style="display:block; margin-bottom:5px;">الاسم الكامل:</label>
+                                    <input id="swal-name" class="swal2-input" value="${u.name}" style="margin:0 0 15px 0; width:100%;">
+                                    
+                                    <label style="display:block; margin-bottom:5px;">الرتبة / المسمى الوظيفي:</label>
+                                    <select id="swal-rank" class="swal2-input" style="margin:0 0 15px 0; width:100%;">
+                                        ${ranksOptions}
+                                    </select>
+
+                                    <label style="display:block; margin-bottom:5px;">الفرع:</label>
+                                    <select id="swal-branch" class="swal2-input" style="margin:0 0 15px 0; width:100%;">
+                                        <option value="ALL" ${u.branch === 'ALL' ? 'selected' : ''}>الإدارة العليا</option>
+                                        ${branchesOptions}
+                                    </select>
+
+                                    <label style="display:block; margin-bottom:5px;">كلمة المرور الجديدة:</label>
+                                    <input id="swal-pass" type="text" class="swal2-input" value="${u.pass}" style="margin:0 0 15px 0; width:100%;">
+                                    
+                                    <p style="font-size:0.8rem; color:var(--danger-pulse);">* ملحوظة: تغيير الـ ID غير مسموح حفاظاً على السجلات.</p>
+                                </div>
+                            `,
+                            focusConfirm: false,
+                            showCancelButton: true,
+                            confirmButtonText: 'حفظ التغييرات',
+                            cancelButtonText: 'إلغاء',
+                            confirmButtonColor: 'var(--gold-master)',
+                            preConfirm: () => {
+                                return {
+                                    name: document.getElementById('swal-name').value,
+                                    title: document.getElementById('swal-rank').value,
+                                    branch: document.getElementById('swal-branch').value,
+                                    pass: document.getElementById('swal-pass').value
+                                }
+                            }
+                        });
+
+                        // 4. حفظ البيانات الجديدة في الفايربيز
+                        if (formValues) {
+                            if(!formValues.name || !formValues.pass) {
+                                renderSystemToast("الاسم والباسورد مطلوبين!", "danger");
+                                return;
+                            }
+
+                            await dbHub.ref('users/' + uid).update(formValues);
+                            
+                            // تحديث القائمة فوراً
+                            renderAdminUsersScrollBox();
+                            renderSystemToast("تم تحديث بيانات الموظف بنجاح", "success");
+
+                            // تسجيل العملية في السجل (اختياري)
+                            dbHub.ref('access_logs').push({
+                                user: currentUserSession.name,
+                                action: `🛠️ تعديل بيانات الموظف: ${u.name}`,
+                                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                                branch: currentUserSession.branch
+                            });
+                        }
                     }
                     function registerNewRankTitleCore() { const t = document.getElementById('adm-rank-name-input').value.trim(); if(t) dbHub.ref('settings/custom_ranks/'+t).set(true); document.getElementById('adm-rank-name-input').value=""; }
                     function runPermissionShieldCheck() {
