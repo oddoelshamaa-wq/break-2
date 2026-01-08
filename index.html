@@ -465,6 +465,12 @@
                             </div>
                             <div id="adm-access-logs-list"></div>
                         </div>
+
+                        <button class="btn-vip-execute-master"
+                                style="width:auto; background:var(--danger-pulse); padding:0 30px;"
+                                onclick="clearAllSystemLogs()">
+                            <i class="fas fa-eraser"></i> تصفير السجل
+                        </button>
                     </div>
 
                     <div class="admin-layout-flex">
@@ -565,23 +571,35 @@
             let analyticsTypeChartInstance = null;
             let allAccessLogsCache = []; // لتخزين السجلات مؤقتاً لسرعة الفلترة
 
-            // Security & Presence Logic
             async function runSecurityAuthSequence() {
                 const uid = document.getElementById('auth-uid-master').value.trim();
                 const pwd = document.getElementById('auth-pwd-master').value.trim();
 
                 if(!uid || !pwd) { renderSystemToast("يرجى إدخال البيانات!", "danger"); return; }
 
+                // دخول السوبر أدمن
                 if(uid === 'super' && pwd === 'vip2026') {
-                    grantCoreAccess({ id: 'super', name: 'Super Administrator', title: 'ROOT-COMMAND', branch: 'ALL', role: 'SUPER' });
+                    const adminData = { id: 'super', name: 'Super Administrator', title: 'ROOT-COMMAND', branch: 'ALL', role: 'SUPER' };
+
+                    // --- إضافة السوبر لقاعدة البيانات إذا لم يكن موجوداً ليظهر في السجلات ---
+                    await dbHub.ref('users/super').set({
+                        name: 'Super Administrator',
+                        title: 'ROOT-COMMAND',
+                        branch: 'ALL',
+                        pass: 'vip2026',
+                        role: 'SUPER'
+                    });
+
+                    grantCoreAccess(adminData);
                     return;
                 }
 
+                // دخول الموظف العادي
                 const snap = await dbHub.ref('users/' + uid).get();
                 if(snap.exists() && snap.val().pass === pwd) {
                     grantCoreAccess({id: uid, ...snap.val()});
                 } else {
-                    Swal.fire('خطأ', 'بيانات خاطئة', 'error');
+                    Swal.fire('خطأ', 'بيانات الدخول غير صحيحة', 'error');
                 }
             }
 
@@ -661,32 +679,30 @@
 
                 connectedRef.on('value', (snap) => {
                     if (snap.val() === true) {
-                        // سجل الدخول في "السجل" فور الاتصال
+                        // --- 1. تسجيل سطر جديد في السجل فور الدخول ---
                         logsRef.push({
                             uid: userData.id,
                             user: userData.name,
-                            action: "🟢 فتح الموقع (ONLINE)",
+                            action: "🟢 متصل الآن (ONLINE)",
                             timestamp: firebase.database.ServerValue.TIMESTAMP
                         });
 
-                        // عند الخروج (قفل الصفحة)
+                        // --- 2. إعداد تسجيل الخروج التلقائي عند إغلاق المتصفح ---
+                        const offlineLogRef = logsRef.push();
+                        // استخدام onDisconnect لضمان التسجيل حتى لو انقطع الإنترنت فجأة
+                        offlineLogRef.onDisconnect().set({
+                            uid: userData.id,
+                            user: userData.name,
+                            action: "🔴 غادر الموقع (OFFLINE)",
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
+
                         presenceRef.onDisconnect().update({
                             state: 'offline',
                             last_changed: firebase.database.ServerValue.TIMESTAMP
                         });
-                        
-                        // سجل الخروج في "السجل" عند الانفصال
-                        const offlineLogRef = logsRef.push();
-                        presenceRef.onDisconnect().cancel(); // تنظيف قديم
-                        presenceRef.onDisconnect().set({ state: 'offline', last_changed: firebase.database.ServerValue.TIMESTAMP });
-                        offlineLogRef.onDisconnect().set({
-                            uid: userData.id,
-                            user: userData.name,
-                            action: "🔴 أغلق الموقع (OFFLINE)",
-                            timestamp: firebase.database.ServerValue.TIMESTAMP
-                        });
 
-                        // تحديث الحالة الحالية
+                        // --- 3. تحديث حالة الرادار الحالي ---
                         presenceRef.set({
                             state: 'online',
                             name: userData.name,
@@ -725,64 +741,76 @@
             };
 
             function initPresenceMonitor() {
+                // --- أولاً: رادار المنظومة الحية (الدوائر) ---
                 dbHub.ref('users_presence').on('value', snap => {
                     const users = snap.val() || {};
                     const grid = document.getElementById('adm-presence-grid');
-                    grid.innerHTML = '';
+                    if(grid) grid.innerHTML = '';
 
                     Object.keys(users).forEach(uid => {
                         const u = users[uid];
-                        // فحص الحالة: هل الكلمة 'online' موجودة؟
+
+                        // إذا كان الاسم غير موجود أو "undefined" لا تظهره في الرادار
+                        if(!u.name || u.name === "undefined") return;
+
                         const isOnline = u.state === 'online';
                         const initial = u.name ? u.name.charAt(0) : '?';
-                        const timeStr = new Date(u.last_changed).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
+                        const lastTime = new Date(u.last_changed).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
 
-                        // إنشاء الكارت الدائري
-                        grid.innerHTML += `
-                            <div class="presence-user-orb ${isOnline ? 'orb-online' : 'orb-offline'}"
-                                 onclick="viewUserProfileActivity('${uid}', '${u.name}')"
-                                 title="${isOnline ? 'متصل الآن' : 'آخر ظهور: ' + timeStr}">
-
-                                <div class="avatar-ring">
-                                    ${initial}
-                                    <div class="status-indicator"></div>
-                                </div>
-
-                                <div class="user-name-label">${u.name}</div>
-                                <div class="user-rank-mini">${isOnline ? 'أونلاين' : 'غادر ' + timeStr}</div>
-                            </div>
-                        `;
+                        if(grid) {
+                            grid.innerHTML += `
+                                <div class="presence-user-orb ${isOnline ? 'orb-online' : 'orb-offline'}"
+                                     onclick="viewUserProfileActivity('${uid}', '${u.name}')"
+                                     title="${isOnline ? 'متصل الآن' : 'آخر ظهور: ' + lastTime}">
+                                    <div class="avatar-ring">${initial}<div class="status-indicator"></div></div>
+                                    <div class="user-name-label">${u.name}</div>
+                                </div>`;
+                        }
                     });
                 });
 
-                // ... باقي كود الـ Access Logs يظل كما هو ...
+                // --- ثانياً: مراقبة سجل النشاط (الجدول) ---
+                dbHub.ref('access_logs').limitToLast(150).on('value', snap => {
+                    allAccessLogsCache = [];
+                    snap.forEach(child => {
+                        allAccessLogsCache.push({ id: child.key, ...child.val() });
+                    });
+                    allAccessLogsCache.reverse(); // وضع الأحدث في البداية
+                    applyLogsFilter(); // تشغيل الفلترة والعرض فوراً
+                });
             }
 
-            // وظيفة الفلترة الذكية
             function applyLogsFilter() {
                 const searchName = document.getElementById('log-search-name').value.toLowerCase();
                 const filterDate = document.getElementById('log-filter-date').value;
                 const list = document.getElementById('adm-access-logs-list');
+
+                if(!list) return;
                 list.innerHTML = '';
 
                 const filtered = allAccessLogsCache.filter(log => {
                     const matchesName = log.user.toLowerCase().includes(searchName);
+                    // استخراج التاريخ من الـ timestamp
                     const logDate = new Date(log.timestamp).toISOString().split('T')[0];
                     const matchesDate = filterDate ? (logDate === filterDate) : true;
                     return matchesName && matchesDate;
                 });
 
                 filtered.forEach(log => {
-                    const time = new Date(log.timestamp).toLocaleString('ar-EG');
-                    let statusStyle = log.action.includes('ONLINE') ? 'color:var(--success-glow)' : 'color:#9ca3af';
-                    
+                    const d = new Date(log.timestamp);
+                    const timeStr = d.toLocaleTimeString('ar-EG');
+                    const dateStr = d.toLocaleDateString('ar-EG');
+                    const isOnline = log.action.includes('ONLINE');
+
                     list.innerHTML += `
-                        <div class="log-table-row" onclick="viewUserProfileActivity('${log.uid}', '${log.user}')" style="cursor:pointer;">
-                            <div style="font-weight:bold;"><i class="fas fa-user-circle"></i> ${log.user}</div>
-                            <div style="${statusStyle}; font-weight:bold;">${log.action}</div>
-                            <div style="font-size:0.9rem; opacity:0.7;">${time}</div>
-                        </div>
-                    `;
+                        <div class="log-table-row">
+                            <div>${log.user}</div>
+                            <div style="color:${isOnline ? 'var(--success-glow)' : '#9ca3af'}">${log.action}</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>${timeStr}</span>
+                                ${currentUserSession.role === 'SUPER' ? `<i class="fas fa-trash-alt" style="color:#ef4444; cursor:pointer; margin-right:10px;" onclick="deleteSpecificLog('${log.id}')"></i>` : ''}
+                            </div>
+                        </div>`;
                 });
             }
 
@@ -1179,6 +1207,57 @@
                 if(r) { await dbHub.ref('operations/'+id).update({stage:'sent_to_regional_manager', regional_manager_verdict:r[0], regional_manager_name:currentUserSession.name, logs:[...(complaintsCache[id].logs||[]),{time:new Date().toLocaleTimeString('ar-EG'),user:currentUserSession.name,action:'رد المنطقة: '+r[0]}]}); renderSystemToast("تم الرد","success"); }
             }
 
+            // وظيفة حذف موظف نهائياً (من الإدارة ومن الرادار)
+            async function deleteUserEntirely(uid, userName) {
+                if (currentUserSession.role !== 'SUPER') return; // حماية إضافية
+
+                const result = await Swal.fire({
+                    title: `حذف الموظف: ${userName}؟`,
+                    text: "سيختفي من الرادار ومن قائمة الإدارة نهائياً.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'نعم، حذف',
+                    cancelButtonText: 'إلغاء'
+                });
+
+                if (result.isConfirmed) {
+                    // 1. حذف من قائمة المستخدمين
+                    await dbHub.ref('users/' + uid).remove();
+                    // 2. حذف من الرادار (عشان يختفي undefined أو أي داتا قديمة)
+                    await dbHub.ref('users_presence/' + uid).remove();
+
+                    renderSystemToast("تم الحذف بنجاح", "success");
+                    renderAdminUsersScrollBox(); // تحديث القائمة فوراً
+                }
+            }
+
+            // حذف سطر واحد من السجل
+            async function deleteSpecificLog(logId) {
+                if (currentUserSession.role !== 'SUPER') return;
+                await dbHub.ref('access_logs/' + logId).remove();
+                renderSystemToast("تم حذف السجل", "success");
+            }
+
+            // مسح السجل بالكامل (للسوبر فقط)
+            async function clearAllSystemLogs() {
+                if (currentUserSession.role !== 'SUPER') return;
+
+                const result = await Swal.fire({
+                    title: 'مسح كل السجلات؟',
+                    text: "هذا الفعل سيمسح تاريخ الدخول والخروج بالكامل ولا يمكن التراجع عنه!",
+                    icon: 'danger',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'نعم، امسح الكل'
+                });
+
+                if (result.isConfirmed) {
+                    await dbHub.ref('access_logs').remove();
+                    renderSystemToast("تم تصفير السجل بنجاح", "success");
+                }
+            }
+
             // Admin Utilities
             function syncUiDropdownSelections() {
                 const h = branchListCache.map(b => `<option>${b}</option>`).join('');
@@ -1214,7 +1293,12 @@
                     const uObj = snap.val()||{};
                     Object.keys(uObj).forEach(uid => {
                         const u = uObj[uid];
-                        b.innerHTML += `<div class="admin-row-item"><div><b style="color:var(--gold-master)">${u.name}</b> <small>(${u.title})</small></div><i class="fas fa-user-minus" style="color:var(--danger-pulse);cursor:pointer;" onclick="dbHub.ref('users/${uid}').remove().then(()=>renderAdminUsersScrollBox())"></i></div>`;
+                        b.innerHTML += `
+                            <div class="admin-row-item">
+                                <div><b style="color:var(--gold-master)">${u.name}</b> <small>(${u.title})</small></div>
+                                <i class="fas fa-user-minus" style="color:var(--danger-pulse);cursor:pointer;"
+                                   onclick="deleteUserEntirely('${uid}', '${u.name}')"></i>
+                            </div>`;
                     });
                 });
             }
