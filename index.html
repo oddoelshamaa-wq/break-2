@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>VIP COMMAND CENTER V47</title>
+        <title>CMS COMMAND CENTER V47</title>
         
         <!-- المكتبات الخارجية -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -353,25 +353,23 @@ h1 { font-size: 1.4rem !important; }
             /* تحسين السجل */
             .log-table-row {
                 display: grid;
-                grid-template-columns: 1.2fr 1.5fr 1fr 1fr;
-                padding: 18px 25px;
+                /* تقسيم المساحة لـ 4 أعمدة متوازنة */
+                grid-template-columns: 1.5fr 1.5fr 1.2fr 1fr;
+                padding: 15px 20px;
                 border-bottom: 1px solid rgba(255,255,255,0.03);
-                font-size: 1rem;
+                font-size: 0.95rem;
                 align-items: center;
-                transition: background 0.3s;
-            }
-
-            .log-table-row:hover {
-                background: rgba(255,255,255,0.02);
+                text-align: right;
             }
 
             .log-header {
                 font-weight: 900;
                 color: var(--gold-master);
-                border-bottom: 2px solid var(--gold-master);
                 background: rgba(245, 158, 11, 0.05);
-                text-transform: uppercase;
-                letter-spacing: 1px;
+                border-bottom: 2px solid var(--gold-master);
+                position: sticky;
+                top: 0;
+                z-index: 10;
             }
 
             .log-action-pill {
@@ -544,7 +542,7 @@ input, select, textarea {
         <!-- Authentication Portal -->
         <div id="auth-portal-mask">
             <div class="massive-glass-card login-card-massive">
-                <div class="identity-orb-vip" style="margin: 0 auto; cursor: default;">VIP</div>
+                <div class="identity-orb-vip" style="margin: 0 auto; cursor: default;">CMS</div>
                 <h1 style="color:var(--gold-master); font-weight:950; margin-bottom:20px;">CENTRAL COMMAND</h1>
                 <p style="color:var(--text-muted-core); font-weight:900;">نظام الرقابة والتحليل الإحصائي الفائق V47.0</p>
                 <div style="margin-top: 40px;">
@@ -743,7 +741,7 @@ input, select, textarea {
 
         <!-- Sidebar Complaint Form -->
         <div id="sidebar-complaint-arc-hub" class="sidebar-complaint-master">
-            <h2 style="color:var(--gold-master); font-size:3rem; margin-bottom:60px;">تحرير مذكرة بلاغ VIP</h2>
+            <h2 style="color:var(--gold-master); font-size:3rem; margin-bottom:60px;">تحرير مذكرة بلاغ CMS</h2>
             <label>الفرع</label><select id="f-branch-master-sel"></select>
             <label>التاريخ</label><input type="date" id="f-date-master">
             <label>الأوردر</label><input id="f-order-id-input" placeholder="#00000000">
@@ -1023,6 +1021,7 @@ input, select, textarea {
             }
 
             function applyLogsFilter() {
+                // جلب القيم من مدخلات الفلتر
                 const searchName = document.getElementById('log-search-name').value.toLowerCase();
                 const filterDate = document.getElementById('log-filter-date').value;
                 const filterBranch = document.getElementById('log-filter-branch').value;
@@ -1031,39 +1030,49 @@ input, select, textarea {
                 if(!list) return;
                 list.innerHTML = '';
 
+                // تصفية المصفوفة بناءً على الشروط الـ 3
                 const filtered = allAccessLogsCache.filter(log => {
                     const matchesName = log.user.toLowerCase().includes(searchName);
-                    // استخراج التاريخ من الـ timestamp
+
+                    // تحويل الـ timestamp لتاريخ بصيغة yyyy-mm-dd للمقارنة
                     const logDate = new Date(log.timestamp).toISOString().split('T')[0];
                     const matchesDate = filterDate ? (logDate === filterDate) : true;
-                    const matchesBranch = filterBranch ? (log.branch === filterBranch) : true;
+
+                    // مقارنة الفرع (لو "كل الفروع" يبقى فاضي ويعدي الكل)
+                    const matchesBranch = (filterBranch === "" || filterBranch === "كل الفروع") ? true : (log.branch === filterBranch);
+
                     return matchesName && matchesDate && matchesBranch;
                 });
 
+                if (filtered.length === 0) {
+                    list.innerHTML = `<div style="text-align:center; padding:50px; color:var(--text-muted-core);">لا توجد سجلات تطابق البحث</div>`;
+                    return;
+                }
+
+                // عرض النتائج في الجدول
                 filtered.forEach(log => {
                     const d = new Date(log.timestamp);
-                    const timeStr = d.toLocaleTimeString('ar-EG');
-                    const dateStr = d.toLocaleDateString('ar-EG');
-                    const isOnline = log.action.includes('ONLINE');
+                    const timeStr = d.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                    const isOnline = log.action.includes('ONLINE') || log.action.includes('فتح');
 
                     list.innerHTML += `
                         <div class="log-table-row">
-                            <div>${log.user}</div>
-                            <div style="color:${isOnline ? 'var(--success-glow)' : '#9ca3af'}">${log.action}</div>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span>${timeStr}</span>
-                                ${currentUserSession.role === 'SUPER' ? `<i class="fas fa-trash-alt" style="color:#ef4444; cursor:pointer; margin-right:10px;" onclick="deleteSpecificLog('${log.id}')"></i>` : ''}
+                            <div style="font-weight:bold;">${log.user}</div>
+                            <div style="color:${isOnline ? 'var(--success-glow)' : '#ef4444'}">
+                                <i class="fas ${isOnline ? 'fa-sign-in-alt' : 'fa-sign-out-alt'}"></i> ${log.action}
                             </div>
-                            <div style="color:var(--gold-master);">${log.branch || '---'}</div>
+                            <div style="direction:ltr; font-family:monospace;">${timeStr}</div>
+                            <div style="color:var(--gold-master); font-size:0.85rem;">${log.branch || 'الإدارة'}</div>
                         </div>`;
                 });
             }
 
+            // دالة إعادة الضبط (زر "إعادة ضبط")
             function resetLogsFilter() {
                 document.getElementById('log-search-name').value = '';
                 document.getElementById('log-filter-date').value = '';
                 document.getElementById('log-filter-branch').value = '';
-                applyLogsFilter();
+                applyLogsFilter(); // تحديث الجدول بعد المسح
             }
 
             // === وظيفة بروفايل الموظف (عرض التايم لاين الخاص به) ===
@@ -1186,7 +1195,7 @@ input, select, textarea {
             async function triggerBranchBroadcast(br, ord, cust, type, msg, time) {
                 const pList = Object.values((systemSettingsCache.phones && systemSettingsCache.phones[br]) || {});
                 if(pList.length === 0) return;
-                const text = `🚨 *بلاغ VIP جديد* 🚨\n\n📍 الفرع: ${br}\n⏰ ${time}\n🔢 الطلب: ${ord}\n👤 العميل: ${cust}\n🏷️ ${type}\n📝 ${msg}\n👷 المتلقي: ${currentUserSession.name}`;
+                const text = `🚨 *بلاغ CMS جديد* 🚨\n\n📍 الفرع: ${br}\n⏰ ${time}\n🔢 الطلب: ${ord}\n👤 العميل: ${cust}\n🏷️ ${type}\n📝 ${msg}\n👷 المتلقي: ${currentUserSession.name}`;
                 pList.forEach(ph => {
                     fetch(`https://api.ultramsg.com/instance157671/messages/chat`, {
                         method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -1432,7 +1441,7 @@ input, select, textarea {
                 const to = document.getElementById('reports-date-to').value;
                 const ops = Object.values(complaintsCache).filter(o => o.date >= from && o.date <= to);
                 const ws = XLSX.utils.json_to_sheet(ops.map(o => ({ 'Date':o.date, 'Time':o.timeOnly, 'Branch':o.branch, 'Order':o.order, 'Customer':o.customer, 'Type':o.type, 'Status':o.status })));
-                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Report"); XLSX.writeFile(wb, `VIP_Report_${from}.xlsx`);
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Report"); XLSX.writeFile(wb, `CMS_Report_${from}.xlsx`);
             }
 
             // Ticket Action Modals
