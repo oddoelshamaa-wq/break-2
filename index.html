@@ -327,6 +327,29 @@ h1 { font-size: 1.4rem !important; }
 
             .user-rank-mini { display: none; } /* إخفاء الرتبة لتوفير مساحة */
 
+            /* تأثير الأوفلاين (الموظف غير الموجود حالياً) */
+            .orb-offline .avatar-ring {
+                border: 2px solid #30363d;
+                filter: grayscale(1); /* جعل الصورة باهتة قليلاً */
+            }
+
+            .orb-offline .status-indicator {
+                background: #484f58; /* لون رمادي للحالة */
+                box-shadow: none;
+            }
+
+            .orb-online .status-indicator {
+                background: #39d353;
+                box-shadow: 0 0 10px #39d353;
+                animation: pulseLive 2s infinite;
+            }
+
+            @keyframes pulseLive {
+                0% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.2); opacity: 0.7; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+
             /* تحسين السجل */
             .log-table-row {
                 display: grid;
@@ -939,33 +962,61 @@ input, select, textarea {
             async function initPresenceMonitor() {
                 const radarFilter = document.getElementById('radar-branch-filter-select');
                 const selectedBranch = radarFilter ? radarFilter.value : "SHOW_ALL";
-                
+
+                // 1. جلب كل الموظفين المسجلين في النظام
                 const usersSnap = await dbHub.ref('users').once('value');
-                const validUsers = usersSnap.val() || {};
+                const allUsers = usersSnap.val() || {};
+
+                // 2. سماع التغييرات في الحالات الحية (المتواجدين الآن)
                 dbHub.ref('users_presence').on('value', snap => {
                     const presenceData = snap.val() || {};
                     const grid = document.getElementById('adm-presence-grid');
                     if(!grid) return;
                     grid.innerHTML = '';
 
-                    Object.keys(presenceData).forEach(uid => {
-                        const u = presenceData[uid];
-                        // التحقق من صحة المستخدم
-                        if (!validUsers[uid] && uid !== 'super') return;
+                    // تحضير قائمة الموظفين بناءً على الفرع المختار
+                    let userList = [];
 
-                        // تطبيق الفلتر: لو اخترت فرع معين يظهر هو بس، لو "الكل" يظهر الكل
-                        if (selectedBranch !== "SHOW_ALL" && u.branch !== selectedBranch) return;
+                    // نمر على كل الموظفين المسجلين (allUsers)
+                    Object.keys(allUsers).forEach(uid => {
+                        const user = allUsers[uid];
 
-                        const isOnline = u.state === 'online';
+                        // فلتر الفرع
+                        if (selectedBranch === "SHOW_ALL" || user.branch === selectedBranch) {
+                            // نتحقق من حالته في جدول التواجد
+                            const presenceInfo = presenceData[uid] || {};
+                            const isOnline = presenceInfo.state === 'online';
+
+                            userList.push({
+                                uid: uid,
+                                name: user.name,
+                                branch: user.branch,
+                                rank: user.title,
+                                isOnline: isOnline
+                            });
+                        }
+                    });
+
+                    if (userList.length === 0) {
+                        grid.innerHTML = `<div style="color:var(--text-muted-core); padding:20px; text-align:center; width:100%;">لا يوجد موظفين مسجلين في هذا الفرع</div>`;
+                        return;
+                    }
+
+                    // ترتيب: الأونلاين يظهر في الأول
+                    userList.sort((a, b) => b.isOnline - a.isOnline);
+
+                    // 3. عرض الموظفين (أونلاين وأوفلاين)
+                    userList.forEach(u => {
                         grid.innerHTML += `
-                            <div class="presence-user-orb ${isOnline ? 'orb-online' : 'orb-offline'}" 
-                                 onclick="viewUserProfileActivity('${uid}', '${u.name}')">
-                                <div class="avatar-ring">
+                            <div class="presence-user-orb ${u.isOnline ? 'orb-online' : 'orb-offline'}"
+                                 style="opacity: ${u.isOnline ? '1' : '0.5'};"
+                                 onclick="viewUserProfileActivity('${u.uid}', '${u.name}')">
+                                <div class="avatar-ring" style="border-color: ${u.isOnline ? '#39d353' : '#484f58'}">
                                     ${u.name ? u.name.charAt(0) : '?'}
-                                    <div class="status-indicator"></div>
+                                    <div class="status-indicator" style="background: ${u.isOnline ? '#39d353' : '#484f58'}"></div>
                                 </div>
-                                <div class="user-name-label">${u.name}</div>
-                                <div style="font-size:0.7rem; color:var(--gold-master); opacity:0.8;">${u.branch === 'ALL' ? 'إدارة' : (u.branch || '')}</div>
+                                <div class="user-name-label" style="color: ${u.isOnline ? '#fff' : '#8b949e'}">${u.name}</div>
+                                <div style="font-size:0.7rem; color:var(--gold-master); opacity:0.8;">${u.rank || ''}</div>
                             </div>`;
                     });
                 });
