@@ -50,16 +50,16 @@
 
             * { box-sizing: border-box; outline: none; margin: 0; padding: 0; transition: var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1); }
 
-            body {
-                font-family: var(--font-stack);
-                background: var(--primary-bg-core);
-                color: var(--text-pure);
-                min-height: 100vh;
-                overflow-x: hidden;
-                font-size: 12px;
-                background-image: radial-gradient(circle at 5% 5%, rgba(245, 158, 11, 0.08) 0%, transparent 45%), radial-gradient(circle at 95% 95%, rgba(29, 78, 216, 0.08) 0%, transparent 50%);
-                background-attachment: fixed;
-            }
+body {
+    font-family: var(--font-stack);
+    background: var(--primary-bg-core);
+    color: var(--text-pure);
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-size: 11px;
+    background-image: radial-gradient(circle at 5% 5%, rgba(245, 158, 11, 0.08) 0%, transparent 45%), radial-gradient(circle at 95% 95%, rgba(29, 78, 216, 0.08) 0%, transparent 50%);
+    background-attachment: fixed;
+}
 
             /* Layout */
             .system-side-nav {
@@ -170,6 +170,9 @@
             .ticket-visual-unit:hover .hover-indicator {
                 opacity: 0; /* اختفاء المؤشر عند الفتح */
             }
+
+            .ticket-visual-unit.expanded { height: auto; }
+            .ticket-visual-unit.expanded .ticket-hidden-details { opacity: 1; transform: translateY(0); }
 
             /* ================================================== */
 
@@ -1138,17 +1141,17 @@ input, select, textarea {
 
                 // تصميم الكارت الجديد (المخفي ثم يظهر)
                 return `
-                    <div class="massive-glass-card ticket-visual-unit">
+                    <div class="massive-glass-card ticket-visual-unit" onclick="toggleTicketDetails(this)">
                         <!-- الجزء الظاهر دائما (العنوان المختصر) -->
                         <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                             <b style="color:var(--gold-master); font-size:2rem;">📍 ${op.branch}</b>
                             <span style="opacity:0.7;">${op.timestamp}</span>
                         </div>
-                        <div style="font-size:3rem; font-weight:950; margin-bottom:10px;">📦 #${op.order}</div>
+                        <div style="font-size:4rem; font-weight:950; margin-bottom:10px;">📦 #${op.order}</div>
                         ${badge}
-                        
+
                         <!-- مؤشر أن هناك المزيد -->
-                        <div class="hover-indicator"><i class="fas fa-chevron-down"></i> التفاصيل</div>
+                        <div class="hover-indicator"><i class="fas fa-chevron-down"></i> اضغط للتفاصيل</div>
 
                         <!-- الجزء المخفي الذي يظهر عند الوقوف (Hover) -->
                         <div class="ticket-hidden-details">
@@ -1465,6 +1468,10 @@ input, select, textarea {
                 toast.className = 'toast-msg-vip'; if(t==='danger') toast.style.background='#ef4444';
                 toast.innerHTML = `<i class="fas ${t==='danger'?'fa-triangle-exclamation':'fa-circle-check'}"></i> ${m}`;
                 b.appendChild(toast); setTimeout(() => toast.remove(), 5000);
+            }
+
+            function toggleTicketDetails(el) {
+                el.classList.toggle('expanded');
             }
         </script>
     </body>
