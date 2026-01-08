@@ -740,18 +740,27 @@
                 }
             };
 
-            function initPresenceMonitor() {
-                // --- أولاً: رادار المنظومة الحية (الدوائر) ---
+            async function initPresenceMonitor() {
+                // 1. جلب قائمة الموظفين الحاليين أولاً للتأكد من وجودهم
+                const usersSnap = await dbHub.ref('users').once('value');
+                const validUsers = usersSnap.val() || {};
+
+                // 2. مراقبة الرادار (جدول الحالات)
                 dbHub.ref('users_presence').on('value', snap => {
-                    const users = snap.val() || {};
+                    const presenceData = snap.val() || {};
                     const grid = document.getElementById('adm-presence-grid');
                     if(grid) grid.innerHTML = '';
 
-                    Object.keys(users).forEach(uid => {
-                        const u = users[uid];
+                    Object.keys(presenceData).forEach(uid => {
+                        const u = presenceData[uid];
 
-                        // إذا كان الاسم غير موجود أو "undefined" لا تظهره في الرادار
-                        if(!u.name || u.name === "undefined") return;
+                        // --- التعديل الجوهري هنا ---
+                        // لو الموظف مش موجود في قائمة الحسابات (validUsers)، امسحه من الرادار فوراً وماتظهروش
+                        if (!validUsers[uid] && uid !== 'super') {
+                            dbHub.ref('users_presence/' + uid).remove(); // تنظيف تلقائي للداتا القديمة
+                            return;
+                        }
+                        // --------------------------
 
                         const isOnline = u.state === 'online';
                         const initial = u.name ? u.name.charAt(0) : '?';
@@ -760,8 +769,7 @@
                         if(grid) {
                             grid.innerHTML += `
                                 <div class="presence-user-orb ${isOnline ? 'orb-online' : 'orb-offline'}"
-                                     onclick="viewUserProfileActivity('${uid}', '${u.name}')"
-                                     title="${isOnline ? 'متصل الآن' : 'آخر ظهور: ' + lastTime}">
+                                     onclick="viewUserProfileActivity('${uid}', '${u.name}')">
                                     <div class="avatar-ring">${initial}<div class="status-indicator"></div></div>
                                     <div class="user-name-label">${u.name}</div>
                                 </div>`;
@@ -769,14 +777,14 @@
                     });
                 });
 
-                // --- ثانياً: مراقبة سجل النشاط (الجدول) ---
+                // 3. مراقبة سجل النشاط (الجدول) كما هي
                 dbHub.ref('access_logs').limitToLast(150).on('value', snap => {
                     allAccessLogsCache = [];
                     snap.forEach(child => {
                         allAccessLogsCache.push({ id: child.key, ...child.val() });
                     });
-                    allAccessLogsCache.reverse(); // وضع الأحدث في البداية
-                    applyLogsFilter(); // تشغيل الفلترة والعرض فوراً
+                    allAccessLogsCache.reverse();
+                    applyLogsFilter();
                 });
             }
 
