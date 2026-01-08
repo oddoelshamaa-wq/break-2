@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="ar" dir="rtl">
     <head>
         <meta charset="UTF-8">
@@ -30,11 +30,11 @@
     --text-pure: #f0f6fc;
     --text-muted-core: #8b949e;
     --border-glow-line: rgba(245, 158, 11, 0.28);
-    --radius-massive: 12px;
+    --radius-massive: 8px;
     --shadow-depth: 0 30px 60px rgba(0,0,0,0.85), inset 0 1px 2px rgba(255,255,255,0.06);
     --font-stack: 'Cairo', sans-serif;
     --transition-speed: 0.2s;
-    --sidebar-width: 220px;
+    --sidebar-width: 200px;
 }
 
             /* Animations */
@@ -56,7 +56,7 @@ body {
     color: var(--text-pure);
     min-height: 100vh;
     overflow-x: hidden;
-    font-size: 11px;
+    font-size: 13px;
     background-image: radial-gradient(circle at 5% 5%, rgba(245, 158, 11, 0.08) 0%, transparent 45%), radial-gradient(circle at 95% 95%, rgba(29, 78, 216, 0.08) 0%, transparent 50%);
     background-attachment: fixed;
 }
@@ -111,68 +111,120 @@ body {
             .sidebar-complaint-master.open { left: 0; }
             .dimmer-overlay-master { position: fixed; inset: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); z-index: 2599; display: none; }
 
-            /* 
-            ==================================================
-            --- TICKET CARD HOVER REVEAL EFFECT ---
-            تصميم الكارت المنكمش الذي يتوسع عند الوقوف عليه
-            ==================================================
-            */
-            .ticket-visual-unit {
-                padding: 40px;
-                border-radius: var(--radius-massive);
-                border-right: 10px solid var(--gold-master);
-                margin-bottom: 30px;
-                background: rgba(22, 27, 34, 0.92);
-                border-top: 1px solid rgba(255,255,255,0.08);
+            /*
+============================================================
+--- VIP COMPACT MODE (إصلاح الحجم الضخم) ---
+============================================================
+*/
 
-                /* التحكم في الارتفاع والانيميشن */
-                height: 160px; /* الارتفاع الافتراضي المنكمش */
-                overflow: hidden; /* إخفاء التفاصيل الزائدة */
-                transition: height 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.3s ease, background 0.3s;
-                cursor: pointer;
-                position: relative;
-            }
+:root {
+    /* تصغير القائمة الجانبية لتوفير مساحة للعرض */
+    --sidebar-width: 240px;
+    --radius-massive: 12px;
+    --transition-speed: 0.2s;
+}
 
-            .ticket-visual-unit:hover { 
-                height: auto; /* السماح بالتمدد التلقائي عند الوقوف */
-                transform: translateY(-10px) scale(1.02); 
-                background: rgba(30, 35, 45, 1);
-                border-color: var(--gold-bright); 
-                z-index: 100;
-                box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-            }
+body {
+    /* تصغير الخط العام للموقع */
+    font-size: 13px;
+}
 
-            /* العناصر المخفية التي تظهر عند الهافر */
-            .ticket-hidden-details {
-                opacity: 0;
-                transform: translateY(20px);
-                transition: opacity 0.4s ease 0.1s, transform 0.4s ease 0.1s;
-                margin-top: 30px;
-                display: block; /* موجودة لكن مخفية */
-            }
+/* --- القائمة الجانبية (تصغير كلي) --- */
+.system-side-nav {
+    width: var(--sidebar-width);
+    padding: 15px 10px;
+    top: 15px; right: 15px; bottom: 15px;
+}
 
-            .ticket-visual-unit:hover .ticket-hidden-details {
-                opacity: 1;
-                transform: translateY(0);
-            }
+.identity-orb-vip {
+    width: 60px; height: 60px; /* تصغير الأفاتار من 110px */
+    font-size: 1.5rem;
+    border-width: 3px;
+    margin-bottom: 10px;
+}
 
-            /* مؤشر بصري يطلب من المستخدم الوقوف على الكارت */
-            .hover-indicator {
-                position: absolute;
-                bottom: 15px;
-                left: 50%;
-                transform: translateX(-50%);
-                color: var(--text-muted-core);
-                font-size: 1.2rem;
-                opacity: 0.7;
-                transition: opacity 0.3s;
-            }
-            .ticket-visual-unit:hover .hover-indicator {
-                opacity: 0; /* اختفاء المؤشر عند الفتح */
-            }
+.identity-labels h2 { font-size: 1rem; }
+.identity-labels span { font-size: 0.75rem; }
 
-            .ticket-visual-unit.expanded { height: auto; }
-            .ticket-visual-unit.expanded .ticket-hidden-details { opacity: 1; transform: translateY(0); }
+.nav-link-vip {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    gap: 10px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+}
+
+/* --- المحتوى الرئيسي --- */
+.vip-master-container {
+    margin-right: calc(var(--sidebar-width) + 30px);
+    margin-left: 15px;
+    padding-top: 15px;
+}
+
+h1 { font-size: 1.6rem !important; margin-bottom: 15px !important; }
+
+/* --- البث الحي (تحويله لشبكة كروت صغيرة بجانب بعضها) --- */
+#render-live-feed-matrix {
+    display: grid;
+    /* يظهر 3 أو 4 بلاغات في السطر الواحد */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.ticket-visual-unit {
+    padding: 15px;
+    border-radius: var(--radius-massive);
+    border-right: 6px solid var(--gold-master);
+    margin-bottom: 15px;
+    background: #0d1117;
+    height: 110px; /* ارتفاع الكارت وهو مقفول */
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* حالة الـ Hover أو عند الضغط (is-fixed) */
+.ticket-visual-unit:hover,
+.ticket-visual-unit.is-fixed {
+    height: auto;
+    min-height: 110px;
+    background: #161b22;
+    border-color: var(--gold-bright);
+    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transform: translateY(-2px);
+}
+
+/* تصميم رقم الأوردر ليكون واضح جداً في الخارج */
+.order-number-badge {
+    font-size: 2.2rem !important; /* الرقم كبير وواضح */
+    font-weight: 900;
+    color: #ffffff;
+    display: block;
+    margin: 5px 0;
+    line-height: 1;
+}
+
+.ticket-hidden-details {
+    opacity: 0;
+    display: none;
+}
+
+.ticket-visual-unit:hover .ticket-hidden-details,
+.ticket-visual-unit.is-fixed .ticket-hidden-details {
+    opacity: 1;
+    display: block;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* تصغير عام لعناصر الموقع عشان ميبقاش ضخم */
+.vip-master-container { padding: 10px; margin-right: calc(var(--sidebar-width) + 20px); }
+h1 { font-size: 1.4rem !important; }
+.btn-vip-execute-master { padding: 10px; font-size: 0.9rem; }
 
             /* ================================================== */
 
@@ -1116,56 +1168,60 @@ input, select, textarea {
                 let btns = "";
                 if(isInteractive) {
                     if(op.stage === 'waiting_review' && (p.reply_ticket || currentUserSession.role === 'SUPER')) {
-                        btns = `<button class="btn-vip-execute-master" style="background:var(--success-glow); color:#000;" onclick="openBranchReplyModalHub('${id}')">الرد والمراجعة <i class="fas fa-reply-all"></i></button>`;
+                        btns = `<button class="btn-vip-execute-master" style="background:var(--success-glow); color:#000;" onclick="event.stopPropagation(); openBranchReplyModalHub('${id}')">الرد والمراجعة</button>`;
                     } else if(op.stage === 'replied' && currentUserSession.role === 'SUPER') {
-                        btns = `<button class="btn-vip-execute-master" style="background:var(--success-glow); color:#000;" onclick="finalizeTicketAndArchive('${id}')">إغلاق (سليم) <i class="fas fa-check"></i></button>
-                                <button class="btn-vip-execute-master" style="background:var(--danger-pulse); color:#fff;" onclick="sendToBranchManagerFromCallCenter('${id}')">إرسال للمدير <i class="fas fa-arrow-right"></i></button>`;
+                        btns = `<button class="btn-vip-execute-master" style="background:var(--success-glow);" onclick="event.stopPropagation(); finalizeTicketAndArchive('${id}')">إغلاق (سليم)</button>
+                                <button class="btn-vip-execute-master" style="background:var(--danger-pulse);" onclick="event.stopPropagation(); sendToBranchManagerFromCallCenter('${id}')">للمدير</button>`;
                     } else if(op.stage === 'sent_to_branch_manager' && currentUserSession.title === 'مدير فرع') {
-                        btns = `<button class="btn-vip-execute-master" onclick="openBranchManagerReplyModalHub('${id}')">رد المدير <i class="fas fa-reply-all"></i></button>`;
+                        btns = `<button class="btn-vip-execute-master" onclick="event.stopPropagation(); openBranchManagerReplyModalHub('${id}')">رد المدير</button>`;
                     } else if(op.stage === 'sent_back_to_call_center' && currentUserSession.role === 'SUPER') {
-                        btns = `<button class="btn-vip-execute-master" style="background:var(--success-glow); color:#000;" onclick="finalizeTicketAndArchive('${id}')">إغلاق (سليم) <i class="fas fa-check"></i></button>
-                                <button class="btn-vip-execute-master" onclick="sendToRegionalManager('${id}')">إرسال للمنطقة <i class="fas fa-arrow-up"></i></button>`;
+                        btns = `<button class="btn-vip-execute-master" style="background:var(--success-glow);" onclick="event.stopPropagation(); finalizeTicketAndArchive('${id}')">إغلاق (سليم)</button>
+                                <button class="btn-vip-execute-master" onclick="event.stopPropagation(); sendToRegionalManager('${id}')">إرسال للمنطقة</button>`;
                     } else if(op.stage === 'sent_to_regional_manager' && currentUserSession.title === 'مدير المنطقة') {
-                        btns = `<button class="btn-vip-execute-master" onclick="openRegionalManagerReplyModalHub('${id}')">رد المنطقة <i class="fas fa-reply-all"></i></button>`;
+                        btns = `<button class="btn-vip-execute-master" onclick="event.stopPropagation(); openRegionalManagerReplyModalHub('${id}')">رد المنطقة</button>`;
                     } else if(op.stage === 'sent_to_regional_manager' && currentUserSession.role === 'SUPER') {
-                        btns = `<button class="btn-vip-execute-master" onclick="finalizeTicketAndArchive('${id}')">إغلاق نهائي <i class="fas fa-check-circle"></i></button>`;
+                        btns = `<button class="btn-vip-execute-master" onclick="event.stopPropagation(); finalizeTicketAndArchive('${id}')">إغلاق نهائي</button>`;
                     }
                 }
-                if(currentUserSession.role === 'SUPER') btns += `<button class="btn-vip-execute-master" style="background:var(--danger-pulse); color:#fff; margin-top:10px;" onclick="deleteTicketRecord('${id}')">حذف <i class="fas fa-trash"></i></button>`;
-                
-                const logs = op.logs ? op.logs.map(l => `<div class="audit-row-item"><b>${l.user}:</b> ${l.action} <span class="timestamp-label">${l.time}</span></div>`).join('') : '';
-                
-                // حالة البلاغ (أعلى الكارت)
-                const badge = (op.branch_verdict === 'ناقص' ? '<span class="badge-status-glow" style="background:rgba(239, 68, 68, 0.2); color:var(--danger-pulse); border:2px solid var(--danger-pulse);">تأكيد نقص فعلي ❌</span>' :
-                    (op.branch_verdict === 'كامل' ? '<span class="badge-status-glow" style="background:rgba(16, 185, 129, 0.2); color:var(--success-glow); border:2px solid var(--success-glow);">الأوردر كامل وسليم ✅</span>' : ''));
 
-                // تصميم الكارت الجديد (المخفي ثم يظهر)
+                if(currentUserSession.role === 'SUPER') btns += `<button class="btn-vip-execute-master" style="background:var(--danger-pulse); margin-top:5px;" onclick="event.stopPropagation(); deleteTicketRecord('${id}')">حذف</button>`;
+
+                const logs = op.logs ? op.logs.map(l => `<div style="font-size:0.8rem; color:#8b949e;">• ${l.user}: ${l.action}</div>`).join('') : '';
+
                 return `
-                    <div class="massive-glass-card ticket-visual-unit" onclick="toggleTicketDetails(this)">
-                        <!-- الجزء الظاهر دائما (العنوان المختصر) -->
-                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <b style="color:var(--gold-master); font-size:2rem;">📍 ${op.branch}</b>
-                            <span style="opacity:0.7;">${op.timestamp}</span>
+                    <div class="massive-glass-card ticket-visual-unit" onclick="this.classList.toggle('is-fixed')">
+                        <!-- الجزء الظاهر دائماً -->
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div>
+                                <b style="color:var(--gold-master); font-size:1.1rem;">📍 ${op.branch || 'فرع غير معروف'}</b>
+                                <div style="font-size:0.75rem; color:#8b949e;">${op.date || ''} ${op.timeOnly || ''}</div>
+                            </div>
+                            <div style="text-align:left;">
+                                <span style="color:var(--gold-master); font-size:0.8rem;">رقم الطلب</span>
+                                <div class="order-number-badge">#${op.order || '000'}</div>
+                            </div>
                         </div>
-                        <div style="font-size:4rem; font-weight:950; margin-bottom:10px;">📦 #${op.order}</div>
-                        ${badge}
 
-                        <!-- مؤشر أن هناك المزيد -->
-                        <div class="hover-indicator"><i class="fas fa-chevron-down"></i> اضغط للتفاصيل</div>
-
-                        <!-- الجزء المخفي الذي يظهر عند الوقوف (Hover) -->
+                        <!-- الجزء المخفي الذي يظهر عند الضغط أو الهافر -->
                         <div class="ticket-hidden-details">
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:25px; margin-bottom:25px; font-size:1.4rem;">
-                                <span>👤 ${op.customer}</span>
-                                <span>🏷️ ${op.type}</span>
+                            <div style="margin-bottom:10px;">
+                                <div style="font-weight:bold; color:#fff;">👤 العميل: ${op.customer}</div>
+                                <div style="color:var(--danger-pulse);">🏷️ النوع: ${op.type}</div>
+                                <div style="color:var(--success-glow);">👨‍✈️ الطيار: ${op.driver || '---'}</div>
                             </div>
-                            <div style="color:var(--success-glow); font-weight:950; margin-bottom:25px; font-size:1.4rem;">👨‍✈️ ${op.driver || '---'}</div>
-                            <div style="color:var(--accent-navy); margin-bottom:25px; font-size:1.2rem;">
-                                محرر: ${op.author} | ديسبتشر: ${op.dispatcher_name||'--'} | مدير: ${op.branch_manager_name||'--'} | منطقة: ${op.regional_manager_name||'--'}
+                            <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:5px; margin-bottom:10px; font-size:0.9rem;">
+                                📝 ${op.msg}
                             </div>
-                            <p style="background:rgba(0,0,0,0.65); padding:30px; border-radius:20px; font-size:1.4rem;">📝 ${op.msg}</p>
-                            <div class="audit-logs-viewport">${logs}</div>
-                            <div style="margin-top:40px;">${btns}</div>
+                            <div style="border-top:1px solid #333; padding-top:5px; margin-bottom:10px;">
+                                ${logs}
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr; gap:5px;">
+                                ${btns}
+                            </div>
+                        </div>
+
+                        <div style="position:absolute; bottom:5px; left:50%; transform:translateX(-50%); font-size:0.7rem; color:#444;">
+                            إضغط للتثبيت
                         </div>
                     </div>`;
             }
