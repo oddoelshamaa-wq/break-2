@@ -649,6 +649,20 @@
                         <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                         <button class="floating-action-master" id="floating-plus-btn" onclick="openSidebarControl()"><i class="fas fa-plus"></i></button>
 
+                        <!-- إضافة شريط الفلتر العلوي -->
+                        <div class="massive-glass-card" style="padding: 15px 25px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-filter" style="color: var(--gold-master);"></i>
+                                <span style="font-weight: 800;">تصفية حسب الفرع:</span>
+                                <select id="global-branch-filter" onchange="refreshAllModulesData()" style="width: 200px; margin-bottom: 0; padding: 5px 15px;">
+                                    <option value="ALL">-- عرض جميع الفروع --</option>
+                                </select>
+                            </div>
+                            <div id="branch-quick-stat" style="color: var(--gold-master); font-weight: 900; font-size: 1.1rem;">
+                                <!-- سيظهر هنا اسم الفرع المختار حالياً -->
+                            </div>
+                        </div>
+
                         <!-- LIVE MODULE -->
                         <div id="module-view-live">
                             <h1 style="font-size:2rem; margin-bottom:20px; color:var(--text-pure); display:flex; align-items:center; gap:15px;">
@@ -682,11 +696,20 @@
 
                         <!-- REPORTS MODULE -->
                         <div id="module-view-reports" class="hidden">
-                            <div class="massive-glass-card" style="padding:50px; display:flex; gap:40px; margin-bottom:60px; align-items:flex-end;">
+                            <div class="massive-glass-card" style="padding:50px; display:flex; gap:40px; margin-bottom:60px; align-items:flex-end; flex-wrap: wrap;">
                                 <div style="flex:1;"><label>من:</label><input type="date" id="reports-date-from"></div>
                                 <div style="flex:1;"><label>إلى:</label><input type="date" id="reports-date-to"></div>
-                                <button class="btn-vip-execute-master" style="width:250px;" onclick="executeAdvancedAnalyticsSequence()">تحليل</button>
-                                <button class="btn-vip-execute-master" style="width:200px; background:var(--accent-navy);" onclick="exportReportsToExcel()">Excel</button>
+
+                                <!-- إضافة فلتر الفرع هنا -->
+                                <div style="flex:1;">
+                                    <label>الفرع:</label>
+                                    <select id="reports-branch-filter" style="margin-bottom: 0;">
+                                        <option value="ALL">-- عرض الكل --</option>
+                                    </select>
+                                </div>
+
+                                <button class="btn-vip-execute-master" style="width:200px;" onclick="executeAdvancedAnalyticsSequence()">تحليل</button>
+                                <button class="btn-vip-execute-master" style="width:150px; background:var(--accent-navy);" onclick="exportReportsToExcel()">Excel</button>
                             </div>
                             <div id="render-analytics-stat-row" class="stat-cards-grid"></div>
                             <div class="analytics-dual-layout">
@@ -1379,12 +1402,15 @@
 
                     function renderLiveBroadcastMatrix() {
                         const box = document.getElementById('render-live-feed-matrix'); box.innerHTML = "";
+                        const selectedBranch = document.getElementById('global-branch-filter').value;
                         const p = systemSettingsCache.permissions ? (systemSettingsCache.permissions[currentUserSession.title] || {}) : {};
                         const canSeeAll = p.view_all || currentUserSession.branch === 'ALL' || currentUserSession.role === 'SUPER';
                         Object.keys(complaintsCache).reverse().forEach(id => {
                             const op = complaintsCache[id];
-                            if(op.status === 'done') return; 
+                            if(op.status === 'done') return;
                             if(!canSeeAll && op.branch !== currentUserSession.branch) return;
+                            // شرط الفلترة بالفرع المختار
+                            if(selectedBranch !== 'ALL' && op.branch !== selectedBranch) return;
                             box.innerHTML += generateTicketMarkup(id, op, true, p);
                         });
                     }
@@ -1393,6 +1419,7 @@
                         const box = document.getElementById('render-archive-grid-hub'); if(!box) return; box.innerHTML = "";
                         const from = document.getElementById('archive-date-from').value;
                         const to = document.getElementById('archive-date-to').value;
+                        const selectedBranch = document.getElementById('global-branch-filter').value;
                         const p = systemSettingsCache.permissions ? (systemSettingsCache.permissions[currentUserSession.title] || {}) : {};
                         const canSeeAll = p.view_all || currentUserSession.branch === 'ALL' || currentUserSession.role === 'SUPER';
                         Object.keys(complaintsCache).reverse().forEach(id => {
@@ -1400,6 +1427,8 @@
                             if(op.status !== 'done') return;
                             if(!canSeeAll && op.branch !== currentUserSession.branch) return;
                             if(op.date < from || op.date > to) return;
+                            // شرط الفلترة بالفرع المختار
+                            if(selectedBranch !== 'ALL' && op.branch !== selectedBranch) return;
                             box.innerHTML += generateTicketMarkup(id, op, false, p);
                         });
                     }
@@ -1470,68 +1499,75 @@
                     async function executeAdvancedAnalyticsSequence() {
                         const from = document.getElementById('reports-date-from').value;
                         const to = document.getElementById('reports-date-to').value;
+                        const selectedBranch = document.getElementById('reports-branch-filter').value;
 
                         if(!from || !to) {
                             Swal.fire('تنبيه', 'يرجى تحديد الفترة الزمنية أولاً', 'warning');
                             return;
                         }
 
-                        // 1. جلب بيانات يومية الأوردرات من السيرفر
-                        let allDays = {};
+                        // 1. جلب بيانات يومية الأوردرات
                         const dSnap = await dbHub.ref('daily_stats').get();
-                        allDays = dSnap.val() || {};
+                        const allDays = dSnap.val() || {};
 
-                        // 2. تصفية الشكاوى بناءً على التاريخ المختار والفرع
-                        const ops = Object.values(complaintsCache).filter(o => o.date >= from && o.date <= to);
-                        const p = systemSettingsCache.permissions ? (systemSettingsCache.permissions[currentUserSession.title] || {}) : {};
-                        const canSeeAll = p.view_all || currentUserSession.branch === 'ALL' || currentUserSession.role === 'SUPER';
+                        // 2. تصفية الشكاوى بناءً على التاريخ والفرع المختار
+                        const ops = Object.values(complaintsCache).filter(o => {
+                            const matchDate = o.date >= from && o.date <= to;
+                            const matchBranch = (selectedBranch === "ALL") ? true : (o.branch === selectedBranch);
+                            return matchDate && matchBranch;
+                        });
 
-                        // 3. حساب إجمالي الأوردرات وإجمالي الشكاوى في الفترة المختارة
+                        // 3. حساب إجمالي أوردرات الفرع (أو الفروع) في الفترة المحددة
                         let totalOrdersPeriod = 0;
-                        let totalComplaintsPeriod = ops.length;
-
-                        // حساب الأوردرات بناءً على صلاحية المشاهدة
                         Object.keys(allDays).forEach(day => {
                             if(day >= from && day <= to) {
                                 Object.keys(allDays[day]).forEach(br => {
-                                    if(canSeeAll || br === currentUserSession.branch) {
+                                    if(selectedBranch === "ALL" || br === selectedBranch) {
                                         totalOrdersPeriod += parseInt(allDays[day][br] || 0);
                                     }
                                 });
                             }
                         });
 
-                        // حساب النسبة المئوية العامة للخطأ في المنظومة
-                        // المعادلة: (الشكاوى / الأوردرات) * 100
-                        let globalErrorRate = totalOrdersPeriod > 0 ? ((totalComplaintsPeriod / totalOrdersPeriod) * 100).toFixed(2) : 0;
+                        let totalComplaints = ops.length;
+                        let resolved = ops.filter(o => o.status === 'done').length;
+                        let errorRate = totalOrdersPeriod > 0 ? ((totalComplaints / totalOrdersPeriod) * 100).toFixed(2) : 0;
+                        let completionRate = totalComplaints > 0 ? Math.round((resolved / totalComplaints) * 100) : 0;
 
-                        // 4. تحديث الكروت العلوية (النتائج بالأرقام والنسب)
-                        const resolved = ops.filter(o => o.status === 'done').length;
+                        // 4. عرض النتائج في الكروت (ليصبح كل فرع له إحصائياته الخاصة)
                         document.getElementById('render-analytics-stat-row').innerHTML = `
                             <div class="analytics-pill-card" style="border-top:12px solid #8b5cf6">
                                 <h2>${totalOrdersPeriod}</h2>
                                 <p>إجمالي الأوردرات</p>
                             </div>
                             <div class="analytics-pill-card" style="border-top:12px solid var(--gold-master)">
-                                <h2>${totalComplaintsPeriod}</h2>
+                                <h2>${totalComplaints}</h2>
                                 <p>إجمالي الشكاوى</p>
                             </div>
                             <div class="analytics-pill-card" style="border-top:12px solid #ef4444">
-                                <h2>${globalErrorRate}%</h2>
-                                <p>معدل الخطأ العام</p>
+                                <h2>${errorRate}%</h2>
+                                <p>معدل الخطأ</p>
                             </div>
                             <div class="analytics-pill-card" style="border-top:12px solid var(--success-glow)">
                                 <h2>${resolved}</h2>
                                 <p>شكاوى مغلقة</p>
                             </div>
                             <div class="analytics-pill-card" style="border-top:12px solid var(--accent-navy)">
-                                <h2>${totalComplaintsPeriod ? Math.round((resolved/totalComplaintsPeriod)*100) : 0}%</h2>
+                                <h2>${completionRate}%</h2>
                                 <p>نسبة الإنجاز</p>
                             </div>`;
 
-                        // 5. إعداد بيانات الرسم البياني (نسبة الخطأ لكل فرع على حدة)
+                        // 5. تحديث الرسم البياني (سيظهر فقط الفروع المختارة)
+                        updateAnalyticsCharts(ops, selectedBranch, allDays, from, to);
+                    }
+
+                    function updateAnalyticsCharts(ops, selectedBranch, allDays, from, to) {
+                        // 6. إعداد بيانات الرسم البياني (نسبة الخطأ لكل فرع على حدة)
                         const labels = [];
                         const branchRates = [];
+
+                        const p = systemSettingsCache.permissions ? (systemSettingsCache.permissions[currentUserSession.title] || {}) : {};
+                        const canSeeAll = p.view_all || currentUserSession.branch === 'ALL' || currentUserSession.role === 'SUPER';
 
                         branchListCache.forEach(br => {
                             if(!canSeeAll && br !== currentUserSession.branch) return;
@@ -1551,7 +1587,7 @@
                             branchRates.push(rate);
                         });
 
-                        // 6. تحديث المخطط البياني (الأعمدة)
+                        // 7. تحديث المخطط البياني (الأعمدة)
                         if(analyticsChartInstance) analyticsChartInstance.destroy();
                         analyticsChartInstance = new Chart(document.getElementById('master-reports-canvas').getContext('2d'), {
                             type: 'bar',
@@ -1584,7 +1620,7 @@
                             }
                         });
 
-                        // 7. تحديث مخطط الأنواع (الدائرة)
+                        // 8. تحديث مخطط الأنواع (الدائرة)
                         const typeCounts = {};
                         ops.forEach(o => { typeCounts[o.type || 'أخرى'] = (typeCounts[o.type || 'أخرى'] || 0) + 1; });
 
@@ -1612,7 +1648,12 @@
                     function exportReportsToExcel() {
                         const from = document.getElementById('reports-date-from').value;
                         const to = document.getElementById('reports-date-to').value;
-                        const ops = Object.values(complaintsCache).filter(o => o.date >= from && o.date <= to);
+                        const selectedBranch = document.getElementById('reports-branch-filter').value;
+                        let ops = Object.values(complaintsCache).filter(o => o.date >= from && o.date <= to);
+                        // فلترة بالفرع المختار
+                        if(selectedBranch !== 'ALL') {
+                            ops = ops.filter(o => o.branch === selectedBranch);
+                        }
                         const ws = XLSX.utils.json_to_sheet(ops.map(o => ({ 'Date':o.date, 'Time':o.timeOnly, 'Branch':o.branch, 'Order':o.order, 'Customer':o.customer, 'Type':o.type, 'Status':o.status })));
                         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Report"); XLSX.writeFile(wb, `CMS_Report_${from}.xlsx`);
                     }
@@ -1700,7 +1741,26 @@
                         if(document.getElementById('adm-whatsapp-br-sel')) document.getElementById('adm-whatsapp-br-sel').innerHTML = h;
                         if(document.getElementById('reg-user-branch-sel-core')) document.getElementById('reg-user-branch-sel-core').innerHTML = `<option value="ALL">الإدارة العليا</option>` + h;
 
-                        // 3. تحديث قائمة فلتر الرادار (اللي سألت عليها)
+                        // 3. تحديث الفلتر العالمي
+                        const globalFilter = document.getElementById('global-branch-filter');
+                        if(globalFilter) {
+                            const currentVal = globalFilter.value;
+                            globalFilter.innerHTML = `<option value="ALL">-- عرض جميع الفروع --</option>` + h;
+                            globalFilter.value = currentVal;
+                        }
+
+                        // 4. تحديث فلتر التقارير الجديد
+                        const reportsFilter = document.getElementById('reports-branch-filter');
+                        if(reportsFilter) {
+                            // إذا كان المستخدم سوبر أدمن يرى كل الفروع، إذا كان مدير فرع يرى فرعه فقط
+                            if(currentUserSession.branch === 'ALL' || currentUserSession.role === 'SUPER') {
+                                reportsFilter.innerHTML = `<option value="ALL">-- كل الفروع --</option>` + h;
+                            } else {
+                                reportsFilter.innerHTML = `<option value="${currentUserSession.branch}">${currentUserSession.branch}</option>`;
+                            }
+                        }
+
+                        // 5. تحديث قائمة فلتر الرادار (اللي سألت عليها)
                         const radarFilter = document.getElementById('radar-branch-filter-select');
                         if(radarFilter) {
                             // بنحفظ القيمة المختارة حالياً عشان متتغيرش مع التحديث
@@ -1709,12 +1769,12 @@
                             radarFilter.value = currentVal;
                         }
 
-                        // 4. تحديث قائمة الرتب
+                        // 6. تحديث قائمة الرتب
                         const rh = Object.keys(systemSettingsCache.custom_ranks || {}).map(r => `<option value="${r}">${r}</option>`).join('');
                         if(document.getElementById('adm-rank-matrix-sel')) document.getElementById('adm-rank-matrix-sel').innerHTML = `<option value="">-- اختر --</option>` + rh;
                         if(document.getElementById('reg-user-rank-sel-core')) document.getElementById('reg-user-rank-sel-core').innerHTML = rh;
 
-                        // 5. تحديث قائمة الفروع في السجل
+                        // 7. تحديث قائمة الفروع في السجل
                         updateLogBranchDropdown();
                     }
 
@@ -1890,6 +1950,19 @@
 
                     function toggleTicketDetails(el) {
                         el.classList.toggle('expanded');
+                    }
+
+                    function refreshAllModulesData() {
+                        const selectedBranch = document.getElementById('global-branch-filter').value;
+                        document.getElementById('branch-quick-stat').innerText = selectedBranch === 'ALL' ? "كل المنظومة" : "فرع: " + selectedBranch;
+
+                        // تحديث كل الأجزاء فوراً
+                        renderLiveBroadcastMatrix();
+                        runArchiveRefreshSequence();
+                        loadDailySnapshotData();
+                        if(!document.getElementById('module-view-reports').classList.contains('hidden')) {
+                            executeAdvancedAnalyticsSequence();
+                        }
                     }
                 </script>
             </body>
